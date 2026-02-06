@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using CardBattle.Core;
 using CardBattle.Core.Deck;
@@ -41,12 +42,14 @@ namespace CardBattle.AI
         public GameState CreateState(int playerId)
         {
             var playerManager = PlayerManager.Instance;
-            if (playerManager == null) return null;
+            if (playerManager == null)
+                throw new InvalidOperationException("PlayerManager.Instance is null.");
 
             var myData = playerManager.GetPlayerData(playerId);
             var opponentId = playerId == 0 ? 1 : 0;
             var opponentData = playerManager.GetPlayerData(opponentId);
-            if (myData == null || opponentData == null) return null;
+            if (myData == null || opponentData == null)
+                throw new InvalidOperationException($"Player data is null. my={myData != null}, opponent={opponentData != null}");
 
             var state = new GameState
             {
@@ -166,7 +169,6 @@ namespace CardBattle.AI
         public List<GameAction> DecideActions(int playerId)
         {
             var currentState = CreateState(playerId);
-            if (currentState == null) return new List<GameAction>();
 
             var actionSequence = new List<GameAction>();
 

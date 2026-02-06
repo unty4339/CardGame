@@ -1,4 +1,7 @@
+using System;
+using System.Reflection;
 using CardBattle.Core.Deck;
+using CardBattle.Core.Enums;
 using CardBattle.Core.Partner;
 using CardBattle.Core.Player;
 using CardBattle.ScriptableObjects;
@@ -40,29 +43,59 @@ namespace CardBattle.Managers
         }
 
         /// <summary>
+        /// コスト1・1/1・効果なしのユニットカード30枚のダミーデッキレシピをランタイムで生成する
+        /// </summary>
+        private static DeckRecipe CreateDummyDeckRecipe()
+        {
+            var unitData = ScriptableObject.CreateInstance<UnitData>();
+            SetPrivateField(unitData, "baseHP", 1);
+            SetPrivateField(unitData, "baseAttack", 1);
+
+            var cardTemplate = ScriptableObject.CreateInstance<CardTemplate>();
+            SetPrivateField(cardTemplate, "cardType", CardType.Unit);
+            SetPrivateField(cardTemplate, "playCost", 1);
+            SetPrivateField(cardTemplate, "unitData", unitData);
+
+            var deckRecipe = ScriptableObject.CreateInstance<DeckRecipe>();
+            var entries = GetPrivateField<System.Collections.Generic.List<DeckRecipeEntry>>(deckRecipe, "entries");
+            entries.Add(new DeckRecipeEntry { Template = cardTemplate, Count = 30 });
+
+            return deckRecipe;
+        }
+
+        private static void SetPrivateField(object target, string fieldName, object value)
+        {
+            var field = target.GetType().GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Instance);
+            field?.SetValue(target, value);
+        }
+
+        private static T GetPrivateField<T>(object target, string fieldName)
+        {
+            var field = target.GetType().GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Instance);
+            return (T)field?.GetValue(target);
+        }
+
+        /// <summary>
         /// 戦闘を初期化する
         /// </summary>
         public void InitializeBattle()
         {
-            _firstPlayer = Random.Range(0, 2);
+            _firstPlayer = UnityEngine.Random.Range(0, 2);
             _mulliganDone = false;
 
             var playerManager = PlayerManager.Instance;
             var partnerManager = PartnerManager.Instance;
-            if (playerManager == null) return;
+            if (playerManager == null)
+                throw new InvalidOperationException("PlayerManager.Instance is null.");
 
             for (var i = 0; i < 2; i++)
             {
-                Deck deck;
                 var recipe = i == 0 ? player0DeckRecipe : player1DeckRecipe;
-                if (recipe != null)
+                if (recipe == null)
                 {
-                    deck = DeckBuilder.BuildDeck(recipe);
+                    recipe = CreateDummyDeckRecipe();
                 }
-                else
-                {
-                    deck = new Deck();
-                }
+                var deck = DeckBuilder.BuildDeck(recipe);
 
                 var playerData = new PlayerData
                 {
@@ -94,12 +127,22 @@ namespace CardBattle.Managers
         }
 
         /// <summary>
+        /// 戦闘を初期化し、先攻プレイヤーのターンを開始する
+        /// </summary>
+        public void StartGame()
+        {
+            InitializeBattle();
+            StartTurn(_firstPlayer);
+        }
+
+        /// <summary>
         /// ターンプレイヤーIDを受け取り、ターン開始処理を行う
         /// </summary>
         public void StartTurn(int turnPlayerId)
         {
             var playerManager = PlayerManager.Instance;
-            if (playerManager == null) return;
+            if (playerManager == null)
+                throw new InvalidOperationException("PlayerManager.Instance is null.");
 
             if (!playerManager.DrawCard(turnPlayerId))
             {
@@ -143,11 +186,13 @@ namespace CardBattle.Managers
         public int? CheckGameEnd()
         {
             var playerManager = PlayerManager.Instance;
-            if (playerManager == null) return null;
+            if (playerManager == null)
+                throw new InvalidOperationException("PlayerManager.Instance is null.");
 
             var p0 = playerManager.GetPlayerData(0);
             var p1 = playerManager.GetPlayerData(1);
-            if (p0 == null || p1 == null) return null;
+            if (p0 == null || p1 == null)
+                throw new InvalidOperationException($"Player data is null. p0={p0 != null}, p1={p1 != null}");
 
             if (p0.HP <= 0) return 1;
             if (p1.HP <= 0) return 0;

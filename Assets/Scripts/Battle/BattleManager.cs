@@ -1,3 +1,4 @@
+using System;
 using CardBattle.Core.Enums;
 using CardBattle.Core.Field;
 using UnityEngine;
@@ -75,13 +76,15 @@ namespace CardBattle.Battle
         public void ExecuteAttack(Unit attacker, object target)
         {
             var playerManager = Managers.PlayerManager.Instance;
-            if (playerManager == null) return;
+            if (playerManager == null)
+                throw new InvalidOperationException("PlayerManager.Instance is null.");
 
             var attackerPlayerId = attacker.OwnerPlayerId;
             var opponentPlayerId = attackerPlayerId == 0 ? 1 : 0;
             var attackerData = playerManager.GetPlayerData(attackerPlayerId);
             var opponentData = playerManager.GetPlayerData(opponentPlayerId);
-            if (attackerData == null || opponentData == null) return;
+            if (attackerData == null || opponentData == null)
+                throw new InvalidOperationException($"Player data is null. attacker={attackerPlayerId}, opponent={opponentPlayerId}");
 
             if (target is Unit targetUnit)
             {

@@ -1,3 +1,4 @@
+using System;
 using CardBattle.Core.Field;
 using CardBattle.Core.Partner;
 using CardBattle.Core.Player;
@@ -35,10 +36,14 @@ namespace CardBattle.Managers
         public void PlacePartner(int playerId, Partner partner)
         {
             var playerManager = PlayerManager.Instance;
-            if (playerManager == null) return;
+            if (playerManager == null)
+                throw new InvalidOperationException("PlayerManager.Instance is null.");
 
             var data = playerManager.GetPlayerData(playerId);
-            if (data?.PartnerZone == null) return;
+            if (data == null)
+                throw new ArgumentException($"Player data not found for playerId={playerId}.", nameof(playerId));
+            if (data.PartnerZone == null)
+                throw new InvalidOperationException($"Player {playerId} has no PartnerZone.");
 
             data.PartnerZone.Partner = partner;
             data.PartnerZone.IsPartnerOnField = false;
@@ -50,10 +55,12 @@ namespace CardBattle.Managers
         public bool SpawnPartnerAsUnit(int playerId)
         {
             var playerManager = PlayerManager.Instance;
-            if (playerManager == null) return false;
+            if (playerManager == null)
+                throw new InvalidOperationException("PlayerManager.Instance is null.");
 
             var data = playerManager.GetPlayerData(playerId);
-            if (data?.PartnerZone?.Partner == null) return false;
+            if (data == null || data.PartnerZone == null || data.PartnerZone.Partner == null)
+                throw new InvalidOperationException("Player data, PartnerZone or Partner is null.");
             if (data.PartnerZone.IsPartnerOnField) return false;
 
             var partner = data.PartnerZone.Partner;
@@ -88,10 +95,14 @@ namespace CardBattle.Managers
             if (partnerUnit == null || !partnerUnit.IsPartner) return;
 
             var playerManager = PlayerManager.Instance;
-            if (playerManager == null) return;
+            if (playerManager == null)
+                throw new InvalidOperationException("PlayerManager.Instance is null.");
 
             var data = playerManager.GetPlayerData(ownerPlayerId);
-            if (data?.PartnerZone == null) return;
+            if (data == null)
+                throw new ArgumentException($"Player data not found for ownerPlayerId={ownerPlayerId}.", nameof(ownerPlayerId));
+            if (data.PartnerZone == null)
+                throw new InvalidOperationException($"Player {ownerPlayerId} has no PartnerZone.");
 
             data.FieldZone.Units.Remove(partnerUnit);
             data.PartnerZone.IsPartnerOnField = false;

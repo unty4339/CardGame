@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using CardBattle.ScriptableObjects;
 using Random = UnityEngine.Random;
@@ -19,7 +20,10 @@ namespace CardBattle.Core.Deck
             var deck = new Deck();
             var cards = new List<Card>();
 
-            if (recipe?.Entries == null) return deck;
+            if (recipe == null)
+                throw new ArgumentNullException(nameof(recipe));
+            if (recipe.Entries == null)
+                throw new ArgumentException("DeckRecipe.Entries is null.", nameof(recipe));
 
             foreach (var entry in recipe.Entries)
             {

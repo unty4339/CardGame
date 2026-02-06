@@ -1,3 +1,4 @@
+using System;
 using CardBattle.Core.Enums;
 using CardBattle.Core.Field;
 using CardBattle.Managers;
@@ -45,10 +46,12 @@ namespace CardBattle.Battle
         public void ResolvePlayerAttack(Unit attacker, int targetPlayerId)
         {
             var playerManager = PlayerManager.Instance;
-            if (playerManager == null) return;
+            if (playerManager == null)
+                throw new InvalidOperationException("PlayerManager.Instance is null.");
 
             var targetData = playerManager.GetPlayerData(targetPlayerId);
-            if (targetData == null) return;
+            if (targetData == null)
+                throw new InvalidOperationException($"Target player data not found. targetPlayerId={targetPlayerId}");
 
             targetData.HP -= attacker.Attack;
 

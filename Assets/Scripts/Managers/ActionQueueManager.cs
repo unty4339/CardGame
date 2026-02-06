@@ -1,3 +1,4 @@
+using System;
 using CardBattle.Core;
 using UnityEngine;
 
@@ -48,7 +49,8 @@ namespace CardBattle.Managers
             if (_actionQueue.IsEmpty()) return;
 
             var action = _actionQueue.Dequeue();
-            if (action == null) return;
+            if (action == null)
+                throw new InvalidOperationException("Dequeued action was null.");
 
             switch (action.ActionType)
             {
@@ -66,7 +68,8 @@ namespace CardBattle.Managers
             if (action.SourceCard != null)
             {
                 var playerManager = PlayerManager.Instance;
-                if (playerManager == null) return;
+                if (playerManager == null)
+                    throw new InvalidOperationException("PlayerManager.Instance is null.");
 
                 var ownerId = 0;
                 for (var i = 0; i <= 1; i++)
@@ -80,7 +83,8 @@ namespace CardBattle.Managers
                 }
 
                 var ownerData = playerManager.GetPlayerData(ownerId);
-                if (ownerData == null) return;
+                if (ownerData == null)
+                    throw new InvalidOperationException($"Owner data not found for card. OwnerId={ownerId}");
 
                 var template = action.SourceCard.Template;
                 if (ownerData.CurrentMP < template.PlayCost) return;

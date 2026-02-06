@@ -1,3 +1,4 @@
+using System;
 using CardBattle.Core.Deck;
 using CardBattle.Core.Enums;
 using CardBattle.Core.Field;
@@ -35,11 +36,17 @@ namespace CardBattle.Managers
         /// </summary>
         public Unit SpawnUnitFromCard(Card card, int ownerPlayerId, FieldZone fieldZone)
         {
-            if (card == null || card.Template == null || fieldZone == null) return null;
+            if (card == null)
+                throw new ArgumentNullException(nameof(card));
+            if (card.Template == null)
+                throw new ArgumentException("Card.Template is null.", nameof(card));
+            if (fieldZone == null)
+                throw new ArgumentNullException(nameof(fieldZone));
             if (card.Template.CardType != CardType.Unit) return null;
 
             var unitData = card.Template.UnitData;
-            if (unitData == null) return null;
+            if (unitData == null)
+                throw new ArgumentException("CardTemplate.UnitData is null for Unit card.", nameof(card));
 
             var unit = new Unit
             {
@@ -72,11 +79,17 @@ namespace CardBattle.Managers
         /// </summary>
         public Totem SpawnTotemFromCard(Card card, int ownerPlayerId, FieldZone fieldZone)
         {
-            if (card == null || card.Template == null || fieldZone == null) return null;
+            if (card == null)
+                throw new ArgumentNullException(nameof(card));
+            if (card.Template == null)
+                throw new ArgumentException("Card.Template is null.", nameof(card));
+            if (fieldZone == null)
+                throw new ArgumentNullException(nameof(fieldZone));
             if (card.Template.CardType != CardType.Totem) return null;
 
             var totemData = card.Template.TotemData;
-            if (totemData == null) return null;
+            if (totemData == null)
+                throw new ArgumentException("CardTemplate.TotemData is null for Totem card.", nameof(card));
 
             var totem = new Totem
             {

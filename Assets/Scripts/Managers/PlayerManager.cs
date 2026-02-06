@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using CardBattle.Core;
 using CardBattle.Core.Deck;
@@ -15,6 +16,16 @@ namespace CardBattle.Managers
     {
         private static PlayerManager _instance;
         public static PlayerManager Instance => _instance;
+
+        /// <summary>
+        /// カードを引いたときに発火する。プレイヤーIDと引いたCardが渡される。
+        /// </summary>
+        public event Action<int, Card> OnCardDrawn;
+
+        /// <summary>
+        /// ユニット召喚に成功したときに発火する。プレイヤーID、プレイしたCard、生成されたUnitが渡される。
+        /// </summary>
+        public event Action<int, Card, Unit> OnUnitSummoned;
 
         private readonly Dictionary<int, PlayerData> _players = new();
 
@@ -64,6 +75,27 @@ namespace CardBattle.Managers
             var card = data.Deck.Cards[0];
             data.Deck.Cards.RemoveAt(0);
             data.Hand.Cards.Add(card);
+            OnCardDrawn?.Invoke(playerId, card);
+            return true;
+        }
+
+        /// <summary>
+        /// プレイヤーIDとカードを受け取り、そのカードをプレイしてユニットを召喚する。成功時は true、不成立時は false を返す。
+        /// </summary>
+        public bool TryPlayCard(int playerId, Card card)
+        {
+            var data = GetPlayerData(playerId);
+            if (data == null || card == null || card.Template == null) return false;
+            if (card.Template.CardType != CardType.Unit) return false;
+            if (!data.Hand.Cards.Contains(card)) return false;
+            if (data.CurrentMP < card.Template.PlayCost) return false;
+
+            data.Hand.Cards.Remove(card);
+            data.CurrentMP -= card.Template.PlayCost;
+
+            var unit = UnitManager.Instance?.SpawnUnitFromCard(card, playerId, data.FieldZone);
+            if (unit != null)
+                OnUnitSummoned?.Invoke(playerId, card, unit);
             return true;
         }
 
