@@ -13,6 +13,15 @@ namespace CardBattle.Managers
         public static ActionQueueManager Instance => _instance;
 
         private readonly ActionQueue _actionQueue = new();
+        private bool _isBusy;
+
+        /// <summary>
+        /// アニメーション再生側が完了時に呼ぶ。次の行動の消化が可能になる。
+        /// </summary>
+        public void NotifyActionAnimationCompleted()
+        {
+            _isBusy = false;
+        }
 
         private void Awake()
         {
@@ -28,6 +37,12 @@ namespace CardBattle.Managers
         {
             if (_instance == this)
                 _instance = null;
+        }
+
+        private void Update()
+        {
+            if (_isBusy || _actionQueue.IsEmpty()) return;
+            ProcessNextAction();
         }
 
         /// <summary>
@@ -52,6 +67,8 @@ namespace CardBattle.Managers
             if (action == null)
                 throw new InvalidOperationException("Dequeued action was null.");
 
+            _isBusy = true;
+
             switch (action.ActionType)
             {
                 case Core.Enums.ActionType.Play:
@@ -60,7 +77,18 @@ namespace CardBattle.Managers
                 case Core.Enums.ActionType.Attack:
                     ProcessAttackAction(action);
                     break;
+                case Core.Enums.ActionType.TurnEnd:
+                    ProcessTurnEndAction();
+                    break;
             }
+        }
+
+        private void ProcessTurnEndAction()
+        {
+            var gameFlowManager = GameFlowManager.Instance;
+            if (gameFlowManager != null)
+                gameFlowManager.EndTurn(gameFlowManager.CurrentTurnPlayerId);
+            NotifyActionAnimationCompleted();
         }
 
         private void ProcessPlayAction(GameAction action)
@@ -87,9 +115,14 @@ namespace CardBattle.Managers
                     throw new InvalidOperationException($"Owner data not found for card. OwnerId={ownerId}");
 
                 var template = action.SourceCard.Template;
-                if (ownerData.CurrentMP < template.PlayCost) return;
+                if (ownerData.CurrentMP < template.PlayCost)
+                {
+                    NotifyActionAnimationCompleted();
+                    return;
+                }
 
                 ownerData.CurrentMP -= template.PlayCost;
+                playerManager.NotifyPlayerDataChanged(ownerId);
                 ownerData.Hand.Cards.Remove(action.SourceCard);
 
                 if (template.CardType == Core.Enums.CardType.Unit)
@@ -109,6 +142,7 @@ namespace CardBattle.Managers
                 var dialogueManager = DialogueManager.Instance;
                 dialogueManager?.OnCardPlayed(action.SourceCard);
             }
+            NotifyActionAnimationCompleted();
         }
 
         private void ProcessAttackAction(GameAction action)
@@ -118,6 +152,7 @@ namespace CardBattle.Managers
                 var battleManager = Battle.BattleManager.Instance;
                 battleManager?.ExecuteAttack(action.SourceUnit, action.Target);
             }
+            NotifyActionAnimationCompleted();
         }
     }
 }

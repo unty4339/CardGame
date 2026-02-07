@@ -54,6 +54,7 @@ namespace CardBattle.Battle
                 throw new InvalidOperationException($"Target player data not found. targetPlayerId={targetPlayerId}");
 
             targetData.HP -= attacker.Attack;
+            playerManager.NotifyPlayerDataChanged(targetPlayerId);
 
             if (targetData.HP <= 0)
             {

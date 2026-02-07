@@ -27,10 +27,10 @@ namespace CardBattle.UI
 
             var halfArc = arcAngle * 0.5f * Mathf.Deg2Rad;
             var t = totalCount > 1 ? (float)index / (totalCount - 1) : 0f;
-            var angle = Mathf.Lerp(-halfArc, halfArc, t);
+            var angle = Mathf.PI + Mathf.Lerp(-halfArc, halfArc, t);
             var radius = spacing * Mathf.Max(1, totalCount) * 0.5f;
             var x = radius * Mathf.Sin(angle);
-            var y = -radius * Mathf.Cos(angle);
+            var y = -radius * Mathf.Cos(angle) - radius * 1.1f;
             return new Vector3(x, y, 0f);
         }
 

@@ -27,7 +27,20 @@ namespace CardBattle.Managers
         /// </summary>
         public event Action<int, Card, Unit> OnUnitSummoned;
 
+        /// <summary>
+        /// プレイヤーのHP/MPなどが変更されたときに発火する。変更されたプレイヤーIDが渡される。
+        /// </summary>
+        public event Action<int> OnPlayerDataChanged;
+
         private readonly Dictionary<int, PlayerData> _players = new();
+
+        /// <summary>
+        /// プレイヤーデータ変更を通知する（HP/MPを変更した外部から呼ぶ）
+        /// </summary>
+        public void NotifyPlayerDataChanged(int playerId)
+        {
+            OnPlayerDataChanged?.Invoke(playerId);
+        }
 
         private void Awake()
         {
@@ -92,6 +105,7 @@ namespace CardBattle.Managers
 
             data.Hand.Cards.Remove(card);
             data.CurrentMP -= card.Template.PlayCost;
+            NotifyPlayerDataChanged(playerId);
 
             var unit = UnitManager.Instance?.SpawnUnitFromCard(card, playerId, data.FieldZone);
             if (unit != null)
@@ -173,6 +187,7 @@ namespace CardBattle.Managers
             if (data != null)
             {
                 data.MaxMP++;
+                NotifyPlayerDataChanged(playerId);
             }
         }
 
@@ -185,6 +200,7 @@ namespace CardBattle.Managers
             if (data != null)
             {
                 data.CurrentMP = data.MaxMP;
+                NotifyPlayerDataChanged(playerId);
             }
         }
 

@@ -17,6 +17,11 @@ namespace CardBattle.Managers
         private static GameFlowManager _instance;
         public static GameFlowManager Instance => _instance;
 
+        /// <summary>
+        /// 現在ターン中のプレイヤーID
+        /// </summary>
+        public int CurrentTurnPlayerId => _currentTurnPlayer;
+
         [SerializeField] private DeckRecipe player0DeckRecipe;
         [SerializeField] private DeckRecipe player1DeckRecipe;
         [SerializeField] private Partner player0Partner;
@@ -121,6 +126,9 @@ namespace CardBattle.Managers
                     partnerManager?.PlacePartner(i, partner);
                 }
             }
+
+            playerManager.NotifyPlayerDataChanged(0);
+            playerManager.NotifyPlayerDataChanged(1);
 
             // TODO: マリガン処理
             _mulliganDone = true;

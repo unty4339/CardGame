@@ -7,12 +7,22 @@ namespace CardBattle.Managers
     /// </summary>
     public class GameBootstrap : MonoBehaviour
     {
+        int _count = 0;
         private void Start()
         {
-            var gameFlowManager = GameFlowManager.Instance;
-            if (gameFlowManager != null)
+        }
+
+        void Update()
+        {
+            _count++;
+            if (_count == 10)
             {
-                gameFlowManager.StartGame();
+                Debug.Log("GameBootstrap Start");
+                var gameFlowManager = GameFlowManager.Instance;
+                if (gameFlowManager != null)
+                {
+                    gameFlowManager.StartGame();
+                }
             }
         }
     }

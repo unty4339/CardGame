@@ -67,6 +67,7 @@ namespace CardBattle.Managers
             if (data.CurrentMP < partner.Cost) return false;
 
             data.CurrentMP -= partner.Cost;
+            playerManager.NotifyPlayerDataChanged(playerId);
 
             var unit = new Unit
             {

@@ -1,6 +1,7 @@
 using System.Collections;
 using CardBattle.Core.Deck;
 using CardBattle.Core.Field;
+using CardBattle.Core.Player;
 using CardBattle.Managers;
 using UnityEngine;
 
@@ -17,14 +18,18 @@ namespace CardBattle.UI
         [SerializeField] private FieldVisualizer fieldVisualizer;
         [SerializeField] private UnitView unitPrefab;
         [SerializeField] private float drawAnimationDuration = 0.3f;
+        [SerializeField] private PlayerInfoView player0InfoView;
+        [SerializeField] private PlayerInfoView player1InfoView;
 
         private void Start()
         {
+            Debug.Log("GameVisualManager Start");
             var pm = PlayerManager.Instance;
             if (pm != null)
             {
                 pm.OnCardDrawn += PlayDrawAnimation;
                 pm.OnUnitSummoned += OnUnitSummoned;
+                pm.OnPlayerDataChanged += RefreshPlayerInfoView;
             }
         }
 
@@ -35,7 +40,19 @@ namespace CardBattle.UI
             {
                 pm.OnCardDrawn -= PlayDrawAnimation;
                 pm.OnUnitSummoned -= OnUnitSummoned;
+                pm.OnPlayerDataChanged -= RefreshPlayerInfoView;
             }
+        }
+
+        private void RefreshPlayerInfoView(int playerId)
+        {
+            var pm = PlayerManager.Instance;
+            if (pm == null) return;
+            var data = pm.GetPlayerData(playerId);
+            if (playerId == 0)
+                player0InfoView?.UpdateState(data);
+            else if (playerId == 1)
+                player1InfoView?.UpdateState(data);
         }
 
         /// <summary>

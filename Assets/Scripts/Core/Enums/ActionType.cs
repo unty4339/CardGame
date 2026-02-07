@@ -6,6 +6,7 @@ namespace CardBattle.Core.Enums
     public enum ActionType
     {
         Attack,
-        Play
+        Play,
+        TurnEnd
     }
 }
