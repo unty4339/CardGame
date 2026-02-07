@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CardBattle.Core.Field;
 using UnityEngine;
 
 namespace CardBattle.UI
@@ -36,6 +37,46 @@ namespace CardBattle.UI
             if (unitView == null) return;
             _units.Add(unitView);
             unitView.transform.SetParent(transform, false);
+            UpdateLayout();
+        }
+
+        /// <summary>
+        /// Unitに対応するUnitViewを返す。無ければ null。
+        /// </summary>
+        public UnitView GetViewByUnit(Unit unit)
+        {
+            if (unit == null) return null;
+            foreach (var view in _units)
+            {
+                if (view != null && view.Unit == unit)
+                    return view;
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// 指定スクリーン座標に重なっている UnitView を返す。無ければ null。
+        /// </summary>
+        public UnitView GetUnitViewAtScreenPoint(Vector2 screenPoint, Camera eventCamera)
+        {
+            for (var i = 0; i < _units.Count; i++)
+            {
+                var view = _units[i];
+                if (view == null) continue;
+                var rt = view.GetComponent<RectTransform>();
+                if (rt != null && RectTransformUtility.RectangleContainsScreenPoint(rt, screenPoint, eventCamera))
+                    return view;
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// UnitViewをフィールドから除去し、並べ直す。GameObject の Destroy は呼び出し側で行う。
+        /// </summary>
+        public void RemoveUnit(UnitView unitView)
+        {
+            if (unitView == null) return;
+            _units.Remove(unitView);
             UpdateLayout();
         }
 

@@ -32,6 +32,16 @@ namespace CardBattle.Managers
         /// </summary>
         public event Action<int> OnPlayerDataChanged;
 
+        /// <summary>
+        /// ユニットのHPが変更されたときに発火する。UnitView の表示更新用。
+        /// </summary>
+        public event Action<Unit> OnUnitHpChanged;
+
+        /// <summary>
+        /// ユニットが破壊されたときに発火する。UnitView の削除用。
+        /// </summary>
+        public event Action<Unit> OnUnitDestroyed;
+
         private readonly Dictionary<int, PlayerData> _players = new();
 
         /// <summary>
@@ -40,6 +50,22 @@ namespace CardBattle.Managers
         public void NotifyPlayerDataChanged(int playerId)
         {
             OnPlayerDataChanged?.Invoke(playerId);
+        }
+
+        /// <summary>
+        /// ユニットのHP変更を通知する（攻撃解決などで呼ぶ）
+        /// </summary>
+        public void NotifyUnitHpChanged(Unit unit)
+        {
+            OnUnitHpChanged?.Invoke(unit);
+        }
+
+        /// <summary>
+        /// ユニット破壊を通知する（攻撃解決などで呼ぶ）
+        /// </summary>
+        public void NotifyUnitDestroyed(Unit unit)
+        {
+            OnUnitDestroyed?.Invoke(unit);
         }
 
         private void Awake()
@@ -97,10 +123,18 @@ namespace CardBattle.Managers
         /// </summary>
         public bool TryPlayCard(int playerId, Card card)
         {
+            Debug.Log("TryPlayCard: " + playerId + " " + card);
             var data = GetPlayerData(playerId);
+            Debug.Log("data: " + data);
+            Debug.Log("card: " + card);
+            Debug.Log("card.Template: " + card.Template);
             if (data == null || card == null || card.Template == null) return false;
+            Debug.Log("card.Template.CardType: " + card.Template.CardType);
             if (card.Template.CardType != CardType.Unit) return false;
+            Debug.Log("data.Hand.Cards.Contains(card): " + data.Hand.Cards.Contains(card));
             if (!data.Hand.Cards.Contains(card)) return false;
+            Debug.Log("data.CurrentMP: " + data.CurrentMP);
+            Debug.Log("card.Template.PlayCost: " + card.Template.PlayCost);
             if (data.CurrentMP < card.Template.PlayCost) return false;
 
             data.Hand.Cards.Remove(card);

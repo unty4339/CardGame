@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using CardBattle.Core.Deck;
 using CardBattle.Core.Field;
@@ -12,14 +13,29 @@ namespace CardBattle.UI
     /// </summary>
     public class GameVisualManager : MonoBehaviour
     {
+        public static GameVisualManager Instance { get; private set; }
+
         [SerializeField] private CardView cardPrefab;
-        [SerializeField] private Transform deckTransform;
-        [SerializeField] private HandVisualizer handVisualizer;
-        [SerializeField] private FieldVisualizer fieldVisualizer;
+        [SerializeField] private Transform deckTransformPlayer0;
+        [SerializeField] private Transform deckTransformPlayer1;
+        [SerializeField] private HandVisualizer handVisualizerPlayer0;
+        [SerializeField] private HandVisualizer handVisualizerPlayer1;
+        [SerializeField] private FieldVisualizer fieldVisualizerPlayer0;
+        [SerializeField] private FieldVisualizer fieldVisualizerPlayer1;
         [SerializeField] private UnitView unitPrefab;
         [SerializeField] private float drawAnimationDuration = 0.3f;
         [SerializeField] private PlayerInfoView player0InfoView;
         [SerializeField] private PlayerInfoView player1InfoView;
+
+        private void Awake()
+        {
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+            Instance = this;
+        }
 
         private void Start()
         {
@@ -30,18 +46,74 @@ namespace CardBattle.UI
                 pm.OnCardDrawn += PlayDrawAnimation;
                 pm.OnUnitSummoned += OnUnitSummoned;
                 pm.OnPlayerDataChanged += RefreshPlayerInfoView;
+                pm.OnUnitHpChanged += OnUnitHpChanged;
+                pm.OnUnitDestroyed += OnUnitDestroyed;
             }
         }
 
         private void OnDestroy()
         {
+            if (Instance == this)
+                Instance = null;
             var pm = PlayerManager.Instance;
             if (pm != null)
             {
                 pm.OnCardDrawn -= PlayDrawAnimation;
                 pm.OnUnitSummoned -= OnUnitSummoned;
                 pm.OnPlayerDataChanged -= RefreshPlayerInfoView;
+                pm.OnUnitHpChanged -= OnUnitHpChanged;
+                pm.OnUnitDestroyed -= OnUnitDestroyed;
             }
+        }
+
+        /// <summary>
+        /// 攻撃演出を再生し、完了後に onComplete を呼ぶ。プレイヤー・AI 共通。
+        /// </summary>
+        public void PlayAttackAndResolve(Unit attacker, object target, Action onComplete)
+        {
+            if (onComplete == null) return;
+            StartCoroutine(PlayAttackAndResolveCoroutine(attacker, target, onComplete));
+        }
+
+        private IEnumerator PlayAttackAndResolveCoroutine(Unit attacker, object target, Action onComplete)
+        {
+            var attackerView = fieldVisualizerPlayer0?.GetViewByUnit(attacker) ?? fieldVisualizerPlayer1?.GetViewByUnit(attacker);
+            if (attackerView != null && target is Unit targetUnit)
+            {
+                var targetView = fieldVisualizerPlayer0?.GetViewByUnit(targetUnit) ?? fieldVisualizerPlayer1?.GetViewByUnit(targetUnit);
+                if (targetView != null)
+                {
+                    attackerView.PlayAttackAnimation(targetView);
+                    yield return new WaitForSeconds(0.35f);
+                }
+            }
+            else if (target is int)
+            {
+                yield return new WaitForSeconds(0.3f);
+            }
+
+            onComplete();
+        }
+
+        private void OnUnitHpChanged(Unit unit)
+        {
+            if (unit == null) return;
+            var view = fieldVisualizerPlayer0?.GetViewByUnit(unit) ?? fieldVisualizerPlayer1?.GetViewByUnit(unit);
+            view?.RefreshFromUnit();
+        }
+
+        private void OnUnitDestroyed(Unit unit)
+        {
+            if (unit == null) return;
+            var view0 = fieldVisualizerPlayer0?.GetViewByUnit(unit);
+            var view1 = fieldVisualizerPlayer1?.GetViewByUnit(unit);
+            var view = view0 ?? view1;
+            if (view == null) return;
+            if (view0 != null)
+                fieldVisualizerPlayer0.RemoveUnit(view);
+            else
+                fieldVisualizerPlayer1?.RemoveUnit(view);
+            Destroy(view.gameObject);
         }
 
         private void RefreshPlayerInfoView(int playerId)
@@ -60,25 +132,29 @@ namespace CardBattle.UI
         /// </summary>
         public void PlayDrawAnimation(int playerId, Card cardData)
         {
-            if (cardPrefab == null || handVisualizer == null || deckTransform == null) return;
+            var handV = playerId == 0 ? handVisualizerPlayer0 : handVisualizerPlayer1;
+            var deckT = playerId == 0 ? deckTransformPlayer0 : deckTransformPlayer1;
+            var fieldV = playerId == 0 ? fieldVisualizerPlayer0 : fieldVisualizerPlayer1;
 
-            var cardView = Instantiate(cardPrefab, handVisualizer.transform);
-            cardView.transform.localPosition = handVisualizer.transform.InverseTransformPoint(deckTransform.position);
+            if (cardPrefab == null || handV == null || deckT == null) return;
+
+            var cardView = Instantiate(cardPrefab, handV.transform);
+            cardView.transform.localPosition = handV.transform.InverseTransformPoint(deckT.position);
             cardView.Initialize(cardData);
             cardView.OwnerPlayerId = playerId;
-            if (fieldVisualizer != null && fieldVisualizer.FieldAreaRect != null)
-                cardView.SetFieldAreaRect(fieldVisualizer.FieldAreaRect);
+            if (fieldV != null && fieldV.FieldAreaRect != null)
+                cardView.SetFieldAreaRect(fieldV.FieldAreaRect);
 
-            var targetLocal = handVisualizer.CalculatePosition(handVisualizer.CurrentCount, handVisualizer.CurrentCount + 1);
-            StartCoroutine(AnimateCardToHand(cardView, targetLocal));
+            var targetLocal = handV.CalculatePosition(handV.CurrentCount, handV.CurrentCount + 1);
+            StartCoroutine(AnimateCardToHand(cardView, targetLocal, handV));
         }
 
-        private IEnumerator AnimateCardToHand(CardView cardView, Vector3 targetLocalPosition)
+        private IEnumerator AnimateCardToHand(CardView cardView, Vector3 targetLocalPosition, HandVisualizer targetHand)
         {
             var rt = cardView.transform as RectTransform;
             if (rt == null)
             {
-                handVisualizer.AddCard(cardView);
+                targetHand?.AddCard(cardView);
                 yield break;
             }
 
@@ -93,25 +169,28 @@ namespace CardBattle.UI
             }
 
             rt.localPosition = targetLocalPosition;
-            handVisualizer.AddCard(cardView);
+            targetHand?.AddCard(cardView);
         }
 
         private void OnUnitSummoned(int playerId, Card card, Unit unit)
         {
-            var cardView = handVisualizer?.GetCardViewByCard(card);
+            var handV = playerId == 0 ? handVisualizerPlayer0 : handVisualizerPlayer1;
+            var fieldV = playerId == 0 ? fieldVisualizerPlayer0 : fieldVisualizerPlayer1;
+
+            var cardView = handV?.GetCardViewByCard(card);
             if (cardView != null)
             {
-                handVisualizer.RemoveCard(cardView);
+                handV.RemoveCard(cardView);
                 Destroy(cardView.gameObject);
             }
 
-            if (unitPrefab == null || fieldVisualizer == null) return;
+            if (unitPrefab == null || fieldV == null) return;
 
-            var spawnPos = fieldVisualizer.GetNextSpawnPosition();
-            var unitView = Instantiate(unitPrefab, fieldVisualizer.transform);
+            var spawnPos = fieldV.GetNextSpawnPosition();
+            var unitView = Instantiate(unitPrefab, fieldV.transform);
             (unitView.transform as RectTransform).localPosition = spawnPos;
             unitView.Bind(unit);
-            fieldVisualizer.AddUnit(unitView);
+            fieldV.AddUnit(unitView);
         }
 
         /// <summary>

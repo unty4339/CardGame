@@ -164,7 +164,7 @@ namespace CardBattle.Managers
 
             _currentTurnPlayer = turnPlayerId;
 
-            if (turnPlayerId == _firstPlayer)
+            if (turnPlayerId == 1)
             {
                 var aiController = AI.AIController.Instance;
                 if (aiController != null)

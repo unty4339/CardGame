@@ -1,6 +1,8 @@
 using UnityEditor;
+using UnityEditor.Events;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem.UI;
 using UnityEngine.UI;
@@ -61,6 +63,7 @@ namespace CardBattle.Editor
             go.AddComponent<AIController>();
             go.AddComponent<DialogueManager>();
             go.AddComponent<GameVisualManager>();
+            go.AddComponent<AttackDragController>();
             go.AddComponent<GameBootstrap>();
 
             return go;
@@ -68,10 +71,15 @@ namespace CardBattle.Editor
 
         private struct CanvasData
         {
-            public Transform DeckAnchor;
-            public HandVisualizer HandVisualizer;
-            public FieldVisualizer FieldVisualizer;
-            public RectTransform FieldAreaRect;
+            public Transform DeckAnchorPlayer0;
+            public Transform DeckAnchorPlayer1;
+            public HandVisualizer HandVisualizerPlayer0;
+            public HandVisualizer HandVisualizerPlayer1;
+            public FieldVisualizer FieldVisualizerPlayer0;
+            public FieldVisualizer FieldVisualizerPlayer1;
+            public RectTransform FieldAreaRectPlayer0;
+            public RectTransform FieldAreaRectPlayer1;
+            public RectTransform OpponentPlayerAttackZoneRect;
         }
 
         private static CanvasData CreateCanvasHierarchy(GameObject root)
@@ -85,53 +93,108 @@ namespace CardBattle.Editor
             canvasGo.AddComponent<CanvasScaler>().uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             canvasGo.AddComponent<GraphicRaycaster>();
 
-            var deckGo = new GameObject("DeckAnchor");
-            deckGo.transform.SetParent(canvasGo.transform, false);
-            var deckRect = deckGo.AddComponent<RectTransform>();
-            deckRect.anchorMin = new Vector2(0.1f, 0.1f);
-            deckRect.anchorMax = new Vector2(0.15f, 0.3f);
-            deckRect.offsetMin = Vector2.zero;
-            deckRect.offsetMax = Vector2.zero;
+            var deck0Go = new GameObject("DeckAnchorPlayer0");
+            deck0Go.transform.SetParent(canvasGo.transform, false);
+            var deck0Rect = deck0Go.AddComponent<RectTransform>();
+            deck0Rect.anchorMin = new Vector2(0.1f, 0.1f);
+            deck0Rect.anchorMax = new Vector2(0.15f, 0.3f);
+            deck0Rect.offsetMin = Vector2.zero;
+            deck0Rect.offsetMax = Vector2.zero;
 
-            var handGo = new GameObject("HandArea");
-            handGo.transform.SetParent(canvasGo.transform, false);
-            var handRect = handGo.AddComponent<RectTransform>();
-            handRect.anchorMin = new Vector2(0, 0);
-            handRect.anchorMax = new Vector2(1, 0.25f);
-            handRect.offsetMin = new Vector2(20, 10);
-            handRect.offsetMax = new Vector2(-20, 60);
-            var handVisualizer = handGo.AddComponent<HandVisualizer>();
+            var deck1Go = new GameObject("DeckAnchorPlayer1");
+            deck1Go.transform.SetParent(canvasGo.transform, false);
+            var deck1Rect = deck1Go.AddComponent<RectTransform>();
+            deck1Rect.anchorMin = new Vector2(0.85f, 0.7f);
+            deck1Rect.anchorMax = new Vector2(0.9f, 0.9f);
+            deck1Rect.offsetMin = Vector2.zero;
+            deck1Rect.offsetMax = Vector2.zero;
 
-            var fieldGo = new GameObject("FieldArea");
-            fieldGo.transform.SetParent(canvasGo.transform, false);
-            var fieldRect = fieldGo.AddComponent<RectTransform>();
-            fieldRect.anchorMin = new Vector2(0.1f, 0.35f);
-            fieldRect.anchorMax = new Vector2(0.9f, 0.65f);
-            fieldRect.offsetMin = Vector2.zero;
-            fieldRect.offsetMax = Vector2.zero;
-            var fieldVisualizer = fieldGo.AddComponent<FieldVisualizer>();
+            var hand0Go = new GameObject("HandAreaPlayer0");
+            hand0Go.transform.SetParent(canvasGo.transform, false);
+            var hand0Rect = hand0Go.AddComponent<RectTransform>();
+            hand0Rect.anchorMin = new Vector2(0, 0);
+            hand0Rect.anchorMax = new Vector2(1, 0.25f);
+            hand0Rect.offsetMin = new Vector2(20, 10);
+            hand0Rect.offsetMax = new Vector2(-20, 60);
+            var handVisualizer0 = hand0Go.AddComponent<HandVisualizer>();
 
-            var fieldAreaGo = new GameObject("FieldDropZone");
-            fieldAreaGo.transform.SetParent(fieldGo.transform, false);
-            var fieldAreaRect = fieldAreaGo.AddComponent<RectTransform>();
-            fieldAreaRect.anchorMin = Vector2.zero;
-            fieldAreaRect.anchorMax = Vector2.one;
-            fieldAreaRect.offsetMin = Vector2.zero;
-            fieldAreaRect.offsetMax = Vector2.zero;
+            var hand1Go = new GameObject("HandAreaPlayer1");
+            hand1Go.transform.SetParent(canvasGo.transform, false);
+            var hand1Rect = hand1Go.AddComponent<RectTransform>();
+            hand1Rect.anchorMin = new Vector2(0, 0.75f);
+            hand1Rect.anchorMax = new Vector2(1, 0.95f);
+            hand1Rect.offsetMin = new Vector2(20, 10);
+            hand1Rect.offsetMax = new Vector2(-20, 60);
+            var handVisualizer1 = hand1Go.AddComponent<HandVisualizer>();
+
+            var field0Go = new GameObject("FieldAreaPlayer0");
+            field0Go.transform.SetParent(canvasGo.transform, false);
+            var field0Rect = field0Go.AddComponent<RectTransform>();
+            field0Rect.anchorMin = new Vector2(0.1f, 0.28f);
+            field0Rect.anchorMax = new Vector2(0.9f, 0.48f);
+            field0Rect.offsetMin = Vector2.zero;
+            field0Rect.offsetMax = Vector2.zero;
+            var fieldVisualizer0 = field0Go.AddComponent<FieldVisualizer>();
+            var fieldArea0Go = new GameObject("FieldDropZone");
+            fieldArea0Go.transform.SetParent(field0Go.transform, false);
+            var fieldArea0Rect = fieldArea0Go.AddComponent<RectTransform>();
+            fieldArea0Rect.anchorMin = Vector2.zero;
+            fieldArea0Rect.anchorMax = Vector2.one;
+            fieldArea0Rect.offsetMin = Vector2.zero;
+            fieldArea0Rect.offsetMax = Vector2.zero;
+
+            var field1Go = new GameObject("FieldAreaPlayer1");
+            field1Go.transform.SetParent(canvasGo.transform, false);
+            var field1Rect = field1Go.AddComponent<RectTransform>();
+            field1Rect.anchorMin = new Vector2(0.1f, 0.52f);
+            field1Rect.anchorMax = new Vector2(0.9f, 0.72f);
+            field1Rect.offsetMin = Vector2.zero;
+            field1Rect.offsetMax = Vector2.zero;
+            var fieldVisualizer1 = field1Go.AddComponent<FieldVisualizer>();
+            var fieldArea1Go = new GameObject("FieldDropZone");
+            fieldArea1Go.transform.SetParent(field1Go.transform, false);
+            var fieldArea1Rect = fieldArea1Go.AddComponent<RectTransform>();
+            fieldArea1Rect.anchorMin = Vector2.zero;
+            fieldArea1Rect.anchorMax = Vector2.one;
+            fieldArea1Rect.offsetMin = Vector2.zero;
+            fieldArea1Rect.offsetMax = Vector2.zero;
 
             CreatePlayerInfo(canvasGo.transform, "Player0Info", new Vector2(0, 0.85f), new Vector2(0.3f, 1));
-            CreatePlayerInfo(canvasGo.transform, "Player1Info", new Vector2(0.7f, 0.85f), new Vector2(1, 1));
+            var player1InfoGo = CreatePlayerInfo(canvasGo.transform, "Player1Info", new Vector2(0.7f, 0.85f), new Vector2(1, 1));
+            var opponentZoneRect = CreateOpponentPlayerAttackZone(player1InfoGo.transform);
+
+            CreateEndTurnButton(canvasGo.transform);
 
             return new CanvasData
             {
-                DeckAnchor = deckRect,
-                HandVisualizer = handVisualizer,
-                FieldVisualizer = fieldVisualizer,
-                FieldAreaRect = fieldAreaRect
+                DeckAnchorPlayer0 = deck0Rect,
+                DeckAnchorPlayer1 = deck1Rect,
+                HandVisualizerPlayer0 = handVisualizer0,
+                HandVisualizerPlayer1 = handVisualizer1,
+                FieldVisualizerPlayer0 = fieldVisualizer0,
+                FieldVisualizerPlayer1 = fieldVisualizer1,
+                FieldAreaRectPlayer0 = fieldArea0Rect,
+                FieldAreaRectPlayer1 = fieldArea1Rect,
+                OpponentPlayerAttackZoneRect = opponentZoneRect
             };
         }
 
-        private static void CreatePlayerInfo(Transform parent, string name, Vector2 anchorMin, Vector2 anchorMax)
+        private static RectTransform CreateOpponentPlayerAttackZone(Transform parent)
+        {
+            var go = new GameObject("OpponentPlayerAttackZone");
+            go.transform.SetParent(parent, false);
+            var rect = go.AddComponent<RectTransform>();
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+            var image = go.AddComponent<Image>();
+            image.color = new Color(1f, 1f, 1f, 0f);
+            image.raycastTarget = false;
+            return rect;
+        }
+
+        private static GameObject CreatePlayerInfo(Transform parent, string name, Vector2 anchorMin, Vector2 anchorMax)
         {
             var go = new GameObject(name);
             go.transform.SetParent(parent, false);
@@ -154,6 +217,37 @@ namespace CardBattle.Editor
             so.FindProperty("mpText").objectReferenceValue = mpText;
             so.FindProperty("ppText").objectReferenceValue = mpText;
             so.ApplyModifiedPropertiesWithoutUndo();
+            return go;
+        }
+
+        private static void CreateEndTurnButton(Transform parent)
+        {
+            var go = new GameObject("EndTurnButton");
+            go.transform.SetParent(parent, false);
+            var rect = go.AddComponent<RectTransform>();
+            rect.anchorMin = new Vector2(0.82f, 0.02f);
+            rect.anchorMax = new Vector2(0.98f, 0.12f);
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+
+            var image = go.AddComponent<Image>();
+            image.color = new Color(0.25f, 0.5f, 0.85f);
+
+            var button = go.AddComponent<Button>();
+            var endTurnButton = go.AddComponent<EndTurnButton>();
+            UnityEventTools.AddPersistentListener(button.onClick, new UnityAction(endTurnButton.OnEndTurnClicked));
+
+            var textGo = new GameObject("Text");
+            textGo.transform.SetParent(go.transform, false);
+            var textRect = textGo.AddComponent<RectTransform>();
+            textRect.anchorMin = Vector2.zero;
+            textRect.anchorMax = Vector2.one;
+            textRect.offsetMin = Vector2.zero;
+            textRect.offsetMax = Vector2.zero;
+            var text = textGo.AddComponent<Text>();
+            text.text = "ターン終了";
+            text.fontSize = 18;
+            text.alignment = TextAnchor.MiddleCenter;
         }
 
         private static Text CreateText(Transform parent, string name, string content, Vector2 anchorMin, Vector2 anchorMax)
@@ -331,19 +425,34 @@ namespace CardBattle.Editor
             CardView cardPrefab, UnitView unitPrefab)
         {
             var gameVisualManager = gameSystems.GetComponent<GameVisualManager>();
-            var fieldVisualizer = canvasData.FieldVisualizer;
 
             var gvmSo = new SerializedObject(gameVisualManager);
             gvmSo.FindProperty("cardPrefab").objectReferenceValue = cardPrefab;
-            gvmSo.FindProperty("deckTransform").objectReferenceValue = canvasData.DeckAnchor;
-            gvmSo.FindProperty("handVisualizer").objectReferenceValue = canvasData.HandVisualizer;
-            gvmSo.FindProperty("fieldVisualizer").objectReferenceValue = fieldVisualizer;
+            gvmSo.FindProperty("deckTransformPlayer0").objectReferenceValue = canvasData.DeckAnchorPlayer0;
+            gvmSo.FindProperty("deckTransformPlayer1").objectReferenceValue = canvasData.DeckAnchorPlayer1;
+            gvmSo.FindProperty("handVisualizerPlayer0").objectReferenceValue = canvasData.HandVisualizerPlayer0;
+            gvmSo.FindProperty("handVisualizerPlayer1").objectReferenceValue = canvasData.HandVisualizerPlayer1;
+            gvmSo.FindProperty("fieldVisualizerPlayer0").objectReferenceValue = canvasData.FieldVisualizerPlayer0;
+            gvmSo.FindProperty("fieldVisualizerPlayer1").objectReferenceValue = canvasData.FieldVisualizerPlayer1;
             gvmSo.FindProperty("unitPrefab").objectReferenceValue = unitPrefab;
             gvmSo.ApplyModifiedPropertiesWithoutUndo();
 
-            var fvSo = new SerializedObject(fieldVisualizer);
-            fvSo.FindProperty("fieldAreaRect").objectReferenceValue = canvasData.FieldAreaRect;
-            fvSo.ApplyModifiedPropertiesWithoutUndo();
+            var fv0So = new SerializedObject(canvasData.FieldVisualizerPlayer0);
+            fv0So.FindProperty("fieldAreaRect").objectReferenceValue = canvasData.FieldAreaRectPlayer0;
+            fv0So.ApplyModifiedPropertiesWithoutUndo();
+
+            var fv1So = new SerializedObject(canvasData.FieldVisualizerPlayer1);
+            fv1So.FindProperty("fieldAreaRect").objectReferenceValue = canvasData.FieldAreaRectPlayer1;
+            fv1So.ApplyModifiedPropertiesWithoutUndo();
+
+            var attackDragController = gameSystems.GetComponent<AttackDragController>();
+            if (attackDragController != null && canvasData.OpponentPlayerAttackZoneRect != null)
+            {
+                var adcSo = new SerializedObject(attackDragController);
+                adcSo.FindProperty("opponentFieldVisualizer").objectReferenceValue = canvasData.FieldVisualizerPlayer1;
+                adcSo.FindProperty("opponentPlayerZoneRect").objectReferenceValue = canvasData.OpponentPlayerAttackZoneRect;
+                adcSo.ApplyModifiedPropertiesWithoutUndo();
+            }
         }
 
         private static void EnsureCameraAndEventSystem(GameObject root)

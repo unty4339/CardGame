@@ -111,6 +111,7 @@ namespace CardBattle.UI
 
             var isOverField = fieldAreaRect != null && RectTransformUtility.RectangleContainsScreenPoint(fieldAreaRect, eventData.position, eventData.pressEventCamera);
 
+            Debug.Log("isOverField: " + isOverField);
             if (isOverField && Card != null)
             {
                 var success = PlayerManager.Instance != null && PlayerManager.Instance.TryPlayCard(OwnerPlayerId, Card);

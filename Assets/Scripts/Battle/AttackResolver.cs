@@ -19,8 +19,13 @@ namespace CardBattle.Battle
             defender.HP -= attacker.Attack;
             attacker.HP -= defender.Attack;
 
+            var playerManager = PlayerManager.Instance;
+            playerManager?.NotifyUnitHpChanged(attacker);
+            playerManager?.NotifyUnitHpChanged(defender);
+
             if (defender.HP <= 0)
             {
+                playerManager?.NotifyUnitDestroyed(defender);
                 defenderField.Units.Remove(defender);
                 if (defender.IsPartner)
                 {
@@ -31,6 +36,7 @@ namespace CardBattle.Battle
 
             if (attacker.HP <= 0)
             {
+                playerManager?.NotifyUnitDestroyed(attacker);
                 attackerField.Units.Remove(attacker);
                 if (attacker.IsPartner)
                 {

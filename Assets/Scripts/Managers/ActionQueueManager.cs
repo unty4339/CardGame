@@ -1,5 +1,6 @@
 using System;
 using CardBattle.Core;
+using CardBattle.UI;
 using UnityEngine;
 
 namespace CardBattle.Managers
@@ -14,6 +15,11 @@ namespace CardBattle.Managers
 
         private readonly ActionQueue _actionQueue = new();
         private bool _isBusy;
+
+        /// <summary>
+        /// 現在アクション処理中かどうか。攻撃ドラッグ開始可否の判定に使用する。
+        /// </summary>
+        public bool IsBusy => _isBusy;
 
         /// <summary>
         /// アニメーション再生側が完了時に呼ぶ。次の行動の消化が可能になる。
@@ -121,22 +127,21 @@ namespace CardBattle.Managers
                     return;
                 }
 
-                ownerData.CurrentMP -= template.PlayCost;
-                playerManager.NotifyPlayerDataChanged(ownerId);
-                ownerData.Hand.Cards.Remove(action.SourceCard);
-
                 if (template.CardType == Core.Enums.CardType.Unit)
                 {
-                    var unitManager = UnitManager.Instance;
-                    unitManager?.SpawnUnitFromCard(action.SourceCard, ownerId, ownerData.FieldZone);
+                    playerManager.TryPlayCard(ownerId, action.SourceCard);
                 }
-                else if (template.CardType == Core.Enums.CardType.Totem)
+                else
                 {
-                    var unitManager = UnitManager.Instance;
-                    unitManager?.SpawnTotemFromCard(action.SourceCard, ownerId, ownerData.FieldZone);
-                }
-                else if (template.CardType == Core.Enums.CardType.Spell)
-                {
+                    ownerData.CurrentMP -= template.PlayCost;
+                    playerManager.NotifyPlayerDataChanged(ownerId);
+                    ownerData.Hand.Cards.Remove(action.SourceCard);
+
+                    if (template.CardType == Core.Enums.CardType.Totem)
+                    {
+                        var unitManager = UnitManager.Instance;
+                        unitManager?.SpawnTotemFromCard(action.SourceCard, ownerId, ownerData.FieldZone);
+                    }
                 }
 
                 var dialogueManager = DialogueManager.Instance;
@@ -147,12 +152,30 @@ namespace CardBattle.Managers
 
         private void ProcessAttackAction(GameAction action)
         {
-            if (action.SourceUnit != null)
+            if (action.SourceUnit == null)
             {
-                var battleManager = Battle.BattleManager.Instance;
-                battleManager?.ExecuteAttack(action.SourceUnit, action.Target);
+                NotifyActionAnimationCompleted();
+                return;
             }
-            NotifyActionAnimationCompleted();
+
+            var attacker = action.SourceUnit;
+            var target = action.Target;
+            var battleManager = Battle.BattleManager.Instance;
+
+            var gameVisual = GameVisualManager.Instance;
+            if (gameVisual != null)
+            {
+                gameVisual.PlayAttackAndResolve(attacker, target, () =>
+                {
+                    battleManager?.ExecuteAttack(attacker, target);
+                    NotifyActionAnimationCompleted();
+                });
+            }
+            else
+            {
+                battleManager?.ExecuteAttack(attacker, target);
+                NotifyActionAnimationCompleted();
+            }
         }
     }
 }
