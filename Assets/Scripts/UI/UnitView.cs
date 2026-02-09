@@ -1,3 +1,4 @@
+using System.Collections;
 using CardBattle.Core.Field;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -133,7 +134,7 @@ namespace CardBattle.UI
             StartCoroutine(AttackAnimationCoroutine(target));
         }
 
-        private System.Collections.IEnumerator AttackAnimationCoroutine(UnitView target)
+        private IEnumerator AttackAnimationCoroutine(UnitView target)
         {
             var startPos = transform.position;
             var targetPos = target.transform.position;
@@ -171,7 +172,7 @@ namespace CardBattle.UI
             StartCoroutine(DamageAnimationCoroutine());
         }
 
-        private System.Collections.IEnumerator DamageAnimationCoroutine()
+        private IEnumerator DamageAnimationCoroutine()
         {
             if (bodyImage != null)
             {
@@ -196,6 +197,32 @@ namespace CardBattle.UI
             }
 
             RefreshDisplay();
+        }
+
+        /// <summary>
+        /// 破壊演出を再生する（画像を白くして縮小）。呼び出し元で yield return して完了を待つ。
+        /// </summary>
+        public IEnumerator PlayDestroyAnimation()
+        {
+            const float duration = 0.3f;
+            if (bodyImage != null)
+                bodyImage.color = Color.white;
+
+            if (_rectTransform != null)
+            {
+                var startScale = _rectTransform.localScale;
+                var endScale = new Vector3(0.01f, 0.01f, 0.01f);
+                var elapsed = 0f;
+                while (elapsed < duration)
+                {
+                    elapsed += Time.deltaTime;
+                    var t = Mathf.Clamp01(elapsed / duration);
+                    var tEased = 1f - Mathf.Cos(t * Mathf.PI * 0.5f);
+                    _rectTransform.localScale = Vector3.Lerp(startScale, endScale, tEased);
+                    yield return null;
+                }
+                _rectTransform.localScale = endScale;
+            }
         }
     }
 }

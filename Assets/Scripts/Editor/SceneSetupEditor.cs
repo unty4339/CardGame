@@ -126,12 +126,13 @@ namespace CardBattle.Editor
             hand1Rect.offsetMin = new Vector2(20, 10);
             hand1Rect.offsetMax = new Vector2(-20, 60);
             var handVisualizer1 = hand1Go.AddComponent<HandVisualizer>();
+            handVisualizer1.isOpponent = true;
 
             var field0Go = new GameObject("FieldAreaPlayer0");
             field0Go.transform.SetParent(canvasGo.transform, false);
             var field0Rect = field0Go.AddComponent<RectTransform>();
-            field0Rect.anchorMin = new Vector2(0.1f, 0.28f);
-            field0Rect.anchorMax = new Vector2(0.9f, 0.48f);
+            field0Rect.anchorMin = new Vector2(0.1f, 0.33f);
+            field0Rect.anchorMax = new Vector2(0.9f, 0.55f);
             field0Rect.offsetMin = Vector2.zero;
             field0Rect.offsetMax = Vector2.zero;
             var fieldVisualizer0 = field0Go.AddComponent<FieldVisualizer>();
@@ -146,8 +147,8 @@ namespace CardBattle.Editor
             var field1Go = new GameObject("FieldAreaPlayer1");
             field1Go.transform.SetParent(canvasGo.transform, false);
             var field1Rect = field1Go.AddComponent<RectTransform>();
-            field1Rect.anchorMin = new Vector2(0.1f, 0.52f);
-            field1Rect.anchorMax = new Vector2(0.9f, 0.72f);
+            field1Rect.anchorMin = new Vector2(0.1f, 0.58f);
+            field1Rect.anchorMax = new Vector2(0.9f, 0.80f);
             field1Rect.offsetMin = Vector2.zero;
             field1Rect.offsetMax = Vector2.zero;
             var fieldVisualizer1 = field1Go.AddComponent<FieldVisualizer>();

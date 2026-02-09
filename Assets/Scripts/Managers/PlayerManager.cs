@@ -123,18 +123,10 @@ namespace CardBattle.Managers
         /// </summary>
         public bool TryPlayCard(int playerId, Card card)
         {
-            Debug.Log("TryPlayCard: " + playerId + " " + card);
             var data = GetPlayerData(playerId);
-            Debug.Log("data: " + data);
-            Debug.Log("card: " + card);
-            Debug.Log("card.Template: " + card.Template);
             if (data == null || card == null || card.Template == null) return false;
-            Debug.Log("card.Template.CardType: " + card.Template.CardType);
             if (card.Template.CardType != CardType.Unit) return false;
-            Debug.Log("data.Hand.Cards.Contains(card): " + data.Hand.Cards.Contains(card));
             if (!data.Hand.Cards.Contains(card)) return false;
-            Debug.Log("data.CurrentMP: " + data.CurrentMP);
-            Debug.Log("card.Template.PlayCost: " + card.Template.PlayCost);
             if (data.CurrentMP < card.Template.PlayCost) return false;
 
             data.Hand.Cards.Remove(card);

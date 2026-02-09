@@ -75,7 +75,6 @@ namespace CardBattle.Battle
         /// </summary>
         public void ExecuteAttack(Unit attacker, object target)
         {
-            Debug.Log("ExecuteAttack: " + attacker + " " + target);
             var playerManager = Managers.PlayerManager.Instance;
             if (playerManager == null)
                 throw new InvalidOperationException("PlayerManager.Instance is null.");

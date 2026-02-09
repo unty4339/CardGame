@@ -1,5 +1,6 @@
 using System;
 using System.Reflection;
+using CardBattle.Core;
 using CardBattle.Core.Deck;
 using CardBattle.Core.Enums;
 using CardBattle.Core.Partner;
@@ -175,6 +176,8 @@ namespace CardBattle.Managers
                     {
                         actionQueueManager?.AddAction(action);
                     }
+                    var turnEndAction = new GameAction { ActionType = ActionType.TurnEnd };
+                    actionQueueManager?.AddAction(turnEndAction);
                 }
             }
         }

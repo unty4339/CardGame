@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Threading.Tasks;
 using CardBattle.Core.Deck;
 using CardBattle.Core.Field;
 using CardBattle.Core.Player;
@@ -27,6 +28,9 @@ namespace CardBattle.UI
         [SerializeField] private PlayerInfoView player0InfoView;
         [SerializeField] private PlayerInfoView player1InfoView;
 
+        private const string BombVideoAddress = "Assets/Prefabs/BombVideo.prefab";
+        private GameObject _bombVideoPrefab;
+
         private void Awake()
         {
             if (Instance != null && Instance != this)
@@ -39,7 +43,6 @@ namespace CardBattle.UI
 
         private void Start()
         {
-            Debug.Log("GameVisualManager Start");
             var pm = PlayerManager.Instance;
             if (pm != null)
             {
@@ -49,6 +52,21 @@ namespace CardBattle.UI
                 pm.OnUnitHpChanged += OnUnitHpChanged;
                 pm.OnUnitDestroyed += OnUnitDestroyed;
             }
+            StartCoroutine(LoadBombVideoPrefab());
+        }
+
+        private IEnumerator LoadBombVideoPrefab()
+        {
+            var am = AddressableManager.Instance;
+            if (am == null) yield break;
+
+            Task<GameObject> task = am.LoadAssetAsync<GameObject>(BombVideoAddress);
+            yield return new WaitUntil(() => task.IsCompleted);
+
+            if (task.Status == TaskStatus.RanToCompletion)
+                _bombVideoPrefab = task.Result;
+            else
+                Debug.LogWarning("[GameVisualManager] BombVideo prefab load failed: " + task.Exception?.Message);
         }
 
         private void OnDestroy()
@@ -109,10 +127,31 @@ namespace CardBattle.UI
             var view1 = fieldVisualizerPlayer1?.GetViewByUnit(unit);
             var view = view0 ?? view1;
             if (view == null) return;
-            if (view0 != null)
+            StartCoroutine(PlayUnitDestroySequence(view, view0 != null));
+        }
+
+        private IEnumerator PlayUnitDestroySequence(UnitView view, bool isPlayer0)
+        {
+            var uiParent = VideoEffectManager.Instance != null ? VideoEffectManager.Instance.uiParent : null;
+            Vector2 effectPosition = Vector2.zero;
+            if (uiParent != null)
+            {
+                var worldPos = view.transform.position;
+                var localInParent = uiParent.InverseTransformPoint(worldPos);
+                effectPosition = new Vector2(localInParent.x, localInParent.y);
+            }
+
+            if (isPlayer0)
                 fieldVisualizerPlayer0.RemoveUnit(view);
             else
                 fieldVisualizerPlayer1?.RemoveUnit(view);
+
+            if (VideoEffectManager.Instance != null && _bombVideoPrefab != null)
+                VideoEffectManager.Instance.PlayEffect(_bombVideoPrefab, effectPosition, 2f);
+
+            yield return view.PlayDestroyAnimation();
+
+            yield return new WaitForSeconds(0.15f);
             Destroy(view.gameObject);
         }
 

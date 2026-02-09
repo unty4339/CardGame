@@ -9,8 +9,10 @@ namespace CardBattle.UI
     /// </summary>
     public class HandVisualizer : MonoBehaviour
     {
-        [SerializeField] private float arcAngle = 30f;
+        [SerializeField] private float arcAngle = 20f;
         [SerializeField] private float spacing = 150f;
+        public bool isOpponent;
+        private float handBaseY = -50f;
 
         private readonly List<CardView> _activeCards = new();
 
@@ -23,6 +25,15 @@ namespace CardBattle.UI
         public Vector3 CalculatePosition(int index, int totalCount)
         {
             if (totalCount <= 0) return Vector3.zero;
+            if (isOpponent) return CalculatePositionForOpponent(index, totalCount);
+            return CalculatePositionForSelf(index, totalCount);
+        }
+
+        /// <summary>
+        /// 自分プレイヤー用の手札位置（アーチ状）を計算する
+        /// </summary>
+        private Vector3 CalculatePositionForSelf(int index, int totalCount)
+        {
             if (totalCount == 1) return Vector3.zero;
 
             var halfArc = arcAngle * 0.5f * Mathf.Deg2Rad;
@@ -30,7 +41,21 @@ namespace CardBattle.UI
             var angle = Mathf.PI + Mathf.Lerp(-halfArc, halfArc, t);
             var radius = spacing * Mathf.Max(1, totalCount) * 0.5f;
             var x = radius * Mathf.Sin(angle);
-            var y = -radius * Mathf.Cos(angle) - radius * 1.1f;
+            var y = handBaseY + radius * (-Mathf.Cos(angle) - 1f);
+            return new Vector3(x, y, 0f);
+        }
+
+        /// <summary>
+        /// 相手プレイヤー用の手札位置
+        /// </summary>
+        private Vector3 CalculatePositionForOpponent(int index, int totalCount)
+        {
+            if (totalCount == 1) return Vector3.zero;
+
+            var y = 50f;
+            var opponentSpacing = 15f;
+            var baseX = opponentSpacing * totalCount * 0.5f - 300f;
+            var x = baseX + opponentSpacing * index;
             return new Vector3(x, y, 0f);
         }
 

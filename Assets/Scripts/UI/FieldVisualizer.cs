@@ -10,7 +10,7 @@ namespace CardBattle.UI
     public class FieldVisualizer : MonoBehaviour
     {
         [SerializeField] private RectTransform fieldAreaRect;
-        [SerializeField] private float unitSpacing = 120f;
+        [SerializeField] private float unitSpacing = 90f;
         [SerializeField] private int maxSlots = 7;
 
         private readonly List<UnitView> _units = new();
@@ -26,7 +26,7 @@ namespace CardBattle.UI
         public Vector3 GetNextSpawnPosition()
         {
             var index = _units.Count;
-            return GetSlotPosition(index);
+            return GetSlotPosition(index, _units.Count);
         }
 
         /// <summary>
@@ -80,10 +80,9 @@ namespace CardBattle.UI
             UpdateLayout();
         }
 
-        private Vector3 GetSlotPosition(int index)
+        private Vector3 GetSlotPosition(int index, int totalCount)
         {
-            var count = Mathf.Min(index + 1, maxSlots);
-            var totalWidth = (count - 1) * unitSpacing;
+            var totalWidth = (totalCount - 1) * unitSpacing;
             var startX = -totalWidth * 0.5f;
             var x = startX + index * unitSpacing;
             return new Vector3(x, 0f, 0f);
@@ -93,7 +92,7 @@ namespace CardBattle.UI
         {
             for (var i = 0; i < _units.Count; i++)
             {
-                var pos = GetSlotPosition(i);
+                var pos = GetSlotPosition(i, _units.Count);
                 var rt = _units[i].transform as RectTransform;
                 if (rt != null)
                     rt.localPosition = pos;
