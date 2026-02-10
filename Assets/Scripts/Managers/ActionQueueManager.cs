@@ -1,5 +1,6 @@
 using System;
 using CardBattle.Core;
+using CardBattle.Core.Field;
 using CardBattle.UI;
 using UnityEngine;
 
@@ -158,9 +159,22 @@ namespace CardBattle.Managers
                 return;
             }
 
-            var attacker = action.SourceUnit;
-            var target = action.Target;
+            var playerManager = PlayerManager.Instance;
             var battleManager = Battle.BattleManager.Instance;
+
+            // AI の GameAction はクローン Unit を指すことがあるため、InstanceId で本物の Unit に解決する
+            var rawAttacker = action.SourceUnit;
+            var attacker = playerManager.GetUnitByInstanceId(rawAttacker.OwnerPlayerId, rawAttacker.InstanceId);
+
+            object target;
+            if (action.Target is Unit targetUnit)
+            {
+                target = playerManager.GetUnitByInstanceId(targetUnit.OwnerPlayerId, targetUnit.InstanceId);
+            }
+            else
+            {
+                target = action.Target;
+            }
 
             var gameVisual = GameVisualManager.Instance;
             if (gameVisual != null)

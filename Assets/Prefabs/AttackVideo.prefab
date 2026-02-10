@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1 &5672643917327420318
+--- !u!1 &6344388079292871334
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -8,24 +8,24 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 5432013390269048854}
-  - component: {fileID: 8838179798148999490}
-  - component: {fileID: 8724984694069427766}
-  - component: {fileID: 8572302340160910954}
+  - component: {fileID: 2790210488236786103}
+  - component: {fileID: 7042230247312045514}
+  - component: {fileID: 6763964867905486272}
+  - component: {fileID: 6989632807631189518}
   m_Layer: 0
-  m_Name: BombVideo
+  m_Name: AttackVideo
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!224 &5432013390269048854
+--- !u!224 &2790210488236786103
 RectTransform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5672643917327420318}
+  m_GameObject: {fileID: 6344388079292871334}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
@@ -35,24 +35,24 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 510.7587, y: 468.00473}
   m_SizeDelta: {x: 150, y: 150}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!222 &8838179798148999490
+--- !u!222 &7042230247312045514
 CanvasRenderer:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5672643917327420318}
+  m_GameObject: {fileID: 6344388079292871334}
   m_CullTransparentMesh: 1
---- !u!114 &8724984694069427766
+--- !u!114 &6763964867905486272
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5672643917327420318}
+  m_GameObject: {fileID: 6344388079292871334}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1344c3c82d62a2a41a3576d8abb8e3ea, type: 3}
@@ -60,7 +60,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_Material: {fileID: 2100000, guid: f886c20ffe3b2f9478c89e8b489d4900, type: 2}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 0
+  m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
@@ -73,15 +73,15 @@ MonoBehaviour:
     y: 0
     width: 1
     height: 1
---- !u!328 &8572302340160910954
+--- !u!328 &6989632807631189518
 VideoPlayer:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5672643917327420318}
+  m_GameObject: {fileID: 6344388079292871334}
   m_Enabled: 1
-  m_VideoClip: {fileID: 32900000, guid: 2935b81cf9e16d649b5a44961b54c0fd, type: 3}
+  m_VideoClip: {fileID: 32900000, guid: efb23fd32e37bd146b5543a09de533ce, type: 3}
   m_TargetCameraAlpha: 1
   m_TargetCamera3DLayout: 0
   m_TargetCamera: {fileID: 0}

@@ -1,5 +1,8 @@
+using System;
 using System.Collections;
 using CardBattle.Core.Field;
+using CardBattle.Managers;
+using Coffee.UIEffects;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -14,6 +17,11 @@ namespace CardBattle.UI
         [SerializeField] private Text attackText;
         [SerializeField] private Text hpText;
         [SerializeField] private Image bodyImage;
+        [SerializeField] private float stepBackAmount = 50f;
+        [SerializeField] private float rushDuration = 0.1f;
+        [Tooltip("攻撃時に対象を向くときのZ回転オフセット（度）。正面が上のスプライトなら -90 が目安")]
+        [SerializeField] private float rotationOffsetDeg = -90f;
+        [SerializeField] private UIEffect uiEffect;
 
         private Canvas _canvas;
         private RectTransform _rectTransform;
@@ -26,6 +34,17 @@ namespace CardBattle.UI
         {
             _rectTransform = transform as RectTransform;
             _canvas = GetComponentInParent<Canvas>();
+        }
+        private void Update()
+        {
+            if (uiEffect != null)
+            {
+                var gameFlow = GameFlowManager.Instance;
+                bool myTurnAndCanAttack = Unit != null && gameFlow != null
+                    && gameFlow.CurrentTurnPlayerId == Unit.OwnerPlayerId
+                    && Unit.CanAttack;
+                uiEffect.shadowFade = myTurnAndCanAttack ? 0.1f : 0f;
+            }
         }
 
         public void OnBeginDrag(PointerEventData eventData)
@@ -126,42 +145,82 @@ namespace CardBattle.UI
         }
 
         /// <summary>
-        /// ターゲットのUnitViewに向かって突進して戻る演出を再生する
+        /// ターゲットのUnitViewに向かって突進して戻る演出を再生する（従来API・コールバックなし）
         /// </summary>
         public void PlayAttackAnimation(UnitView target)
         {
             if (target == null) return;
-            StartCoroutine(AttackAnimationCoroutine(target));
+            StartCoroutine(PlayAttackAnimationCoroutine(target.transform.position, null, null));
         }
 
-        private IEnumerator AttackAnimationCoroutine(UnitView target)
+        /// <summary>
+        /// 後退→急突進→到達時コールバック→元の位置に戻るの4段階攻撃演出。呼び出し元で yield return して完了を待つ。
+        /// </summary>
+        public IEnumerator PlayAttackAnimationCoroutine(Vector3 targetWorldPosition, Action onReachedTarget, Action onComplete)
         {
             var startPos = transform.position;
-            var targetPos = target.transform.position;
-            var duration = 0.15f;
-            var elapsed = 0f;
+            var startEuler = transform.localEulerAngles;
 
-            while (elapsed < duration)
+            // 対象方向のZ回転角（rotationOffsetDeg で正面が上のときなどに合わせる。相手攻撃時は下を正面として +180°）
+            var dir = (targetWorldPosition - startPos);
+            dir.z = 0f;
+            var offset = rotationOffsetDeg;
+            if (Unit != null && Unit.OwnerPlayerId == 1)
+                offset += 180f;
+            var targetAngleZ = dir.sqrMagnitude > 0.0001f
+                ? Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg + offset
+                : startEuler.z;
+
+            var stepBackDir = Unit != null && Unit.OwnerPlayerId == 0 ? Vector3.down : Vector3.up;
+            var stepBackPos = startPos + stepBackDir * stepBackAmount;
+            var duration = rushDuration;
+
+            // 1. 後退（位置＋少しずつ対象方向へ向きを変える）
+            var stepBackDuration = 0.08f;
+            var elapsed = 0f;
+            while (elapsed < stepBackDuration)
             {
                 elapsed += Time.deltaTime;
-                var t = elapsed / duration;
-                transform.position = Vector3.Lerp(startPos, targetPos, t);
+                var t = Mathf.Clamp01(elapsed / stepBackDuration);
+                transform.position = Vector3.Lerp(startPos, stepBackPos, t);
+                var z = Mathf.LerpAngle(startEuler.z, targetAngleZ, t);
+                transform.localEulerAngles = new Vector3(startEuler.x, startEuler.y, z);
                 yield return null;
             }
+            transform.position = stepBackPos;
+            transform.localEulerAngles = new Vector3(startEuler.x, startEuler.y, targetAngleZ);
 
-            transform.position = targetPos;
-            yield return new WaitForSeconds(0.05f);
-
+            // 2. 急突進（対象向きのまま）
             elapsed = 0f;
             while (elapsed < duration)
             {
                 elapsed += Time.deltaTime;
-                var t = elapsed / duration;
-                transform.position = Vector3.Lerp(targetPos, startPos, t);
+                var t = Mathf.Clamp01(elapsed / duration);
+                var tEased = 1f - (1f - t) * (1f - t);
+                transform.position = Vector3.Lerp(stepBackPos, targetWorldPosition, tEased);
                 yield return null;
             }
+            transform.position = targetWorldPosition;
 
+            // 3. 到達時コールバック（ビデオ再生など）
+            onReachedTarget?.Invoke();
+            yield return null;
+
+            // 4. 元の位置に戻る（向きも元に戻す）
+            elapsed = 0f;
+            while (elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+                var t = Mathf.Clamp01(elapsed / duration);
+                transform.position = Vector3.Lerp(targetWorldPosition, startPos, t);
+                var z = Mathf.LerpAngle(targetAngleZ, startEuler.z, t);
+                transform.localEulerAngles = new Vector3(startEuler.x, startEuler.y, z);
+                yield return null;
+            }
             transform.position = startPos;
+            transform.localEulerAngles = startEuler;
+
+            onComplete?.Invoke();
         }
 
         /// <summary>

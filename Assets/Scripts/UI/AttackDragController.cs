@@ -108,8 +108,8 @@ namespace CardBattle.UI
             // 相手プレイヤーゾーンにドロップした場合
             if (actionToAdd == null && opponentPlayerZoneRect != null)
             {
-                var camForRect = cam != null ? cam : Camera.main;
-                if (camForRect != null && RectTransformUtility.RectangleContainsScreenPoint(opponentPlayerZoneRect, screenPosition, camForRect))
+                // TODO:「この RectTransform が属している Canvas が Overlay のときは、RectangleContainsScreenPoint に渡す camera を null にする」
+                if (RectTransformUtility.RectangleContainsScreenPoint(opponentPlayerZoneRect, screenPosition, null))
                 {
                     foreach (var a in _attackActions)
                     {

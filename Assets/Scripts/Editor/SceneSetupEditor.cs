@@ -63,6 +63,7 @@ namespace CardBattle.Editor
             go.AddComponent<AIController>();
             go.AddComponent<DialogueManager>();
             go.AddComponent<GameVisualManager>();
+            go.AddComponent<VideoEffectManager>();
             go.AddComponent<AttackDragController>();
             go.AddComponent<GameBootstrap>();
 
@@ -80,6 +81,9 @@ namespace CardBattle.Editor
             public RectTransform FieldAreaRectPlayer0;
             public RectTransform FieldAreaRectPlayer1;
             public RectTransform OpponentPlayerAttackZoneRect;
+            public PlayerInfoView Player0InfoView;
+            public PlayerInfoView Player1InfoView;
+            public Transform CanvasTransform;
         }
 
         private static CanvasData CreateCanvasHierarchy(GameObject root)
@@ -160,8 +164,48 @@ namespace CardBattle.Editor
             fieldArea1Rect.offsetMin = Vector2.zero;
             fieldArea1Rect.offsetMax = Vector2.zero;
 
-            CreatePlayerInfo(canvasGo.transform, "Player0Info", new Vector2(0, 0.85f), new Vector2(0.3f, 1));
-            var player1InfoGo = CreatePlayerInfo(canvasGo.transform, "Player1Info", new Vector2(0.7f, 0.85f), new Vector2(1, 1));
+            PlayerInfoView player0InfoView = null;
+            PlayerInfoView player1InfoView = null;
+            GameObject player1InfoGo;
+
+            var playerInfoPrefab = AssetDatabase.LoadAssetAtPath<GameObject>($"{PrefabsPath}/PlayerInfo.prefab");
+            if (playerInfoPrefab != null)
+            {
+                var player0InfoGo = (GameObject)PrefabUtility.InstantiatePrefab(playerInfoPrefab, canvasGo.transform);
+                player0InfoGo.name = "Player0Info";
+                Undo.RegisterCreatedObjectUndo(player0InfoGo, "Create Player0Info");
+                var rect0 = player0InfoGo.GetComponent<RectTransform>();
+                if (rect0 != null)
+                {
+                    rect0.anchorMin = new Vector2(0, 0f);
+                    rect0.anchorMax = new Vector2(0.25f, 0.15f);
+                    rect0.offsetMin = new Vector2(0, 0);
+                    rect0.offsetMax = new Vector2(0, 0);
+                }
+                player0InfoView = player0InfoGo.GetComponent<PlayerInfoView>();
+
+                player1InfoGo = (GameObject)PrefabUtility.InstantiatePrefab(playerInfoPrefab, canvasGo.transform);
+                player1InfoGo.name = "Player1Info";
+                Undo.RegisterCreatedObjectUndo(player1InfoGo, "Create Player1Info");
+                var rect1 = player1InfoGo.GetComponent<RectTransform>();
+                if (rect1 != null)
+                {
+                    rect1.anchorMin = new Vector2(0.375f, 0.85f);
+                    rect1.anchorMax = new Vector2(0.625f, 1.0f);
+                    rect1.offsetMin = new Vector2(0, 0);
+                    rect1.offsetMax = new Vector2(0, 0);
+                }
+                player1InfoView = player1InfoGo.GetComponent<PlayerInfoView>();
+            }
+            else
+            {
+                Debug.LogWarning("[SceneSetupEditor] PlayerInfo.prefab not found at Assets/Prefabs/PlayerInfo.prefab. Using fallback CreatePlayerInfo.");
+                var player0InfoGo = CreatePlayerInfo(canvasGo.transform, "Player0Info", new Vector2(0, 0.85f), new Vector2(0.3f, 1));
+                player0InfoView = player0InfoGo.GetComponent<PlayerInfoView>();
+                player1InfoGo = CreatePlayerInfo(canvasGo.transform, "Player1Info", new Vector2(0.7f, 0.85f), new Vector2(1, 1));
+                player1InfoView = player1InfoGo.GetComponent<PlayerInfoView>();
+            }
+
             var opponentZoneRect = CreateOpponentPlayerAttackZone(player1InfoGo.transform);
 
             CreateEndTurnButton(canvasGo.transform);
@@ -176,7 +220,10 @@ namespace CardBattle.Editor
                 FieldVisualizerPlayer1 = fieldVisualizer1,
                 FieldAreaRectPlayer0 = fieldArea0Rect,
                 FieldAreaRectPlayer1 = fieldArea1Rect,
-                OpponentPlayerAttackZoneRect = opponentZoneRect
+                OpponentPlayerAttackZoneRect = opponentZoneRect,
+                Player0InfoView = player0InfoView,
+                Player1InfoView = player1InfoView,
+                CanvasTransform = canvasGo.transform
             };
         }
 
@@ -436,6 +483,8 @@ namespace CardBattle.Editor
             gvmSo.FindProperty("fieldVisualizerPlayer0").objectReferenceValue = canvasData.FieldVisualizerPlayer0;
             gvmSo.FindProperty("fieldVisualizerPlayer1").objectReferenceValue = canvasData.FieldVisualizerPlayer1;
             gvmSo.FindProperty("unitPrefab").objectReferenceValue = unitPrefab;
+            gvmSo.FindProperty("player0InfoView").objectReferenceValue = canvasData.Player0InfoView;
+            gvmSo.FindProperty("player1InfoView").objectReferenceValue = canvasData.Player1InfoView;
             gvmSo.ApplyModifiedPropertiesWithoutUndo();
 
             var fv0So = new SerializedObject(canvasData.FieldVisualizerPlayer0);
@@ -453,6 +502,14 @@ namespace CardBattle.Editor
                 adcSo.FindProperty("opponentFieldVisualizer").objectReferenceValue = canvasData.FieldVisualizerPlayer1;
                 adcSo.FindProperty("opponentPlayerZoneRect").objectReferenceValue = canvasData.OpponentPlayerAttackZoneRect;
                 adcSo.ApplyModifiedPropertiesWithoutUndo();
+            }
+
+            var videoEffectManager = gameSystems.GetComponent<VideoEffectManager>();
+            if (videoEffectManager != null && canvasData.CanvasTransform != null)
+            {
+                var vemSo = new SerializedObject(videoEffectManager);
+                vemSo.FindProperty("uiParent").objectReferenceValue = canvasData.CanvasTransform;
+                vemSo.ApplyModifiedPropertiesWithoutUndo();
             }
         }
 

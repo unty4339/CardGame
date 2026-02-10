@@ -90,6 +90,17 @@ namespace CardBattle.Managers
         }
 
         /// <summary>
+        /// 指定プレイヤーのフィールドから、指定した InstanceId の Unit を返す。見つからなければ null。
+        /// AI のクローン Unit を本物の Unit に解決するときに使う。
+        /// </summary>
+        public Unit GetUnitByInstanceId(int playerId, int instanceId)
+        {
+            var data = GetPlayerData(playerId);
+            if (data?.FieldZone?.Units == null) return null;
+            return data.FieldZone.Units.Find(u => u.InstanceId == instanceId);
+        }
+
+        /// <summary>
         /// プレイヤーデータを登録する
         /// </summary>
         public void RegisterPlayer(int playerId, PlayerData playerData)

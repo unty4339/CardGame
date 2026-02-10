@@ -15,8 +15,18 @@ MonoBehaviour:
   m_GroupName: Default Local Group
   m_GUID: 264a22df9b3f2dd4cbdcc299b37eca19
   m_SerializeEntries:
+  - m_GUID: 1667a0f4b70d37540a51a6a38fc81545
+    m_Address: Assets/Prefabs/PlayerInfo.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 586ad38ff5f39804793a9caed369a818
     m_Address: Assets/Prefabs/BombVideo.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 68e4ed8dfcd76ea4cbdc1f7fa21a5607
+    m_Address: Assets/Prefabs/AttackVideo.prefab
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0

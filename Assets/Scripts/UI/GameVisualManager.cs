@@ -16,6 +16,7 @@ namespace CardBattle.UI
     {
         public static GameVisualManager Instance { get; private set; }
 
+        // プレハブ・配置先
         [SerializeField] private CardView cardPrefab;
         [SerializeField] private Transform deckTransformPlayer0;
         [SerializeField] private Transform deckTransformPlayer1;
@@ -28,11 +29,16 @@ namespace CardBattle.UI
         [SerializeField] private PlayerInfoView player0InfoView;
         [SerializeField] private PlayerInfoView player1InfoView;
 
+
+        // Addressables でロードするビデオプレハブ
         private const string BombVideoAddress = "Assets/Prefabs/BombVideo.prefab";
+        private const string AttackVideoAddress = "Assets/Prefabs/AttackVideo.prefab";
         private GameObject _bombVideoPrefab;
+        private GameObject _attackVideoPrefab;
 
         private void Awake()
         {
+            // シングルトン
             if (Instance != null && Instance != this)
             {
                 Destroy(gameObject);
@@ -43,6 +49,7 @@ namespace CardBattle.UI
 
         private void Start()
         {
+            // PlayerManager のイベント購読とビデオプレハブのロード
             var pm = PlayerManager.Instance;
             if (pm != null)
             {
@@ -52,21 +59,28 @@ namespace CardBattle.UI
                 pm.OnUnitHpChanged += OnUnitHpChanged;
                 pm.OnUnitDestroyed += OnUnitDestroyed;
             }
-            StartCoroutine(LoadBombVideoPrefab());
+            StartCoroutine(LoadVideoPrefabs());
         }
 
-        private IEnumerator LoadBombVideoPrefab()
+        /// <summary>BombVideo / AttackVideo を Addressables からロードする。</summary>
+        private IEnumerator LoadVideoPrefabs()
         {
             var am = AddressableManager.Instance;
             if (am == null) yield break;
 
-            Task<GameObject> task = am.LoadAssetAsync<GameObject>(BombVideoAddress);
-            yield return new WaitUntil(() => task.IsCompleted);
-
-            if (task.Status == TaskStatus.RanToCompletion)
-                _bombVideoPrefab = task.Result;
+            var bombTask = am.LoadAssetAsync<GameObject>(BombVideoAddress);
+            yield return new WaitUntil(() => bombTask.IsCompleted);
+            if (bombTask.Status == TaskStatus.RanToCompletion)
+                _bombVideoPrefab = bombTask.Result;
             else
-                Debug.LogWarning("[GameVisualManager] BombVideo prefab load failed: " + task.Exception?.Message);
+                Debug.LogWarning("[GameVisualManager] BombVideo prefab load failed: " + bombTask.Exception?.Message);
+
+            var attackTask = am.LoadAssetAsync<GameObject>(AttackVideoAddress);
+            yield return new WaitUntil(() => attackTask.IsCompleted);
+            if (attackTask.Status == TaskStatus.RanToCompletion)
+                _attackVideoPrefab = attackTask.Result;
+            else
+                Debug.LogWarning("[GameVisualManager] AttackVideo prefab load failed: " + attackTask.Exception?.Message);
         }
 
         private void OnDestroy()
@@ -93,19 +107,60 @@ namespace CardBattle.UI
             StartCoroutine(PlayAttackAndResolveCoroutine(attacker, target, onComplete));
         }
 
+
+         private Vector2 attackTargetPositionWhenAttackingOpponentPlayer = new Vector2(0, 300);
+         private Vector2 attackTargetPositionWhenAttackingSelfPlayer = new Vector2(0, -300);
+
+        /// <summary>攻撃対象の突進先・ビデオ再生位置を解決し、攻撃モーション完了後に onComplete を呼ぶ。</summary>
         private IEnumerator PlayAttackAndResolveCoroutine(Unit attacker, object target, Action onComplete)
         {
             var attackerView = fieldVisualizerPlayer0?.GetViewByUnit(attacker) ?? fieldVisualizerPlayer1?.GetViewByUnit(attacker);
-            if (attackerView != null && target is Unit targetUnit)
+            Debug.Log("attackerView: " + attackerView);
+            var uiParent = VideoEffectManager.Instance != null ? VideoEffectManager.Instance.uiParent : null;
+
+            Vector3 targetWorldPos = default;
+            Vector2 effectPosition = default;
+            bool hasTarget = false;
+
+            // 対象がユニット: その UnitView の位置を突進先・ビデオ位置にする
+            if (target is Unit targetUnit)
             {
                 var targetView = fieldVisualizerPlayer0?.GetViewByUnit(targetUnit) ?? fieldVisualizerPlayer1?.GetViewByUnit(targetUnit);
                 if (targetView != null)
                 {
-                    attackerView.PlayAttackAnimation(targetView);
-                    yield return new WaitForSeconds(0.35f);
+                    targetWorldPos = targetView.transform.position;
+                    if (uiParent != null)
+                    {
+                        var localInParent = uiParent.InverseTransformPoint(targetWorldPos);
+                        effectPosition = new Vector2(localInParent.x, localInParent.y);
+                    }
+                    hasTarget = true;
                 }
             }
-            else if (target is int)
+            // 対象がプレイヤー: 定数座標を使用（自分→相手 / 相手→自分で別）
+            else if (target is int targetPlayerId && uiParent != null)
+            {
+                var localPos = attacker?.OwnerPlayerId == 0
+                    ? attackTargetPositionWhenAttackingOpponentPlayer
+                    : attackTargetPositionWhenAttackingSelfPlayer;
+                targetWorldPos = uiParent.TransformPoint(new Vector3(localPos.x, localPos.y, 0f));
+                effectPosition = localPos;
+                hasTarget = true;
+            }
+
+            if (attackerView != null && hasTarget)
+            {
+                var prefab = _attackVideoPrefab;
+                yield return attackerView.PlayAttackAnimationCoroutine(
+                    targetWorldPos,
+                    onReachedTarget: () =>
+                    {
+                        if (VideoEffectManager.Instance != null && prefab != null)
+                            VideoEffectManager.Instance.PlayEffect(prefab, effectPosition, 1f);
+                    },
+                    onComplete: null);
+            }
+            else if (attackerView == null || !hasTarget)
             {
                 yield return new WaitForSeconds(0.3f);
             }
@@ -113,6 +168,7 @@ namespace CardBattle.UI
             onComplete();
         }
 
+        /// <summary>ユニットの HP 変更時に表示を再同期する。</summary>
         private void OnUnitHpChanged(Unit unit)
         {
             if (unit == null) return;
@@ -120,6 +176,7 @@ namespace CardBattle.UI
             view?.RefreshFromUnit();
         }
 
+        /// <summary>ユニット破壊時に破壊演出コルーチンを開始する。</summary>
         private void OnUnitDestroyed(Unit unit)
         {
             if (unit == null) return;
@@ -130,6 +187,7 @@ namespace CardBattle.UI
             StartCoroutine(PlayUnitDestroySequence(view, view0 != null));
         }
 
+        /// <summary>ユニット破壊時: ビデオ再生 → 破壊アニメ → オブジェクト削除。</summary>
         private IEnumerator PlayUnitDestroySequence(UnitView view, bool isPlayer0)
         {
             var uiParent = VideoEffectManager.Instance != null ? VideoEffectManager.Instance.uiParent : null;
@@ -155,6 +213,7 @@ namespace CardBattle.UI
             Destroy(view.gameObject);
         }
 
+        /// <summary>指定プレイヤーの PlayerInfoView を PlayerManager のデータで更新する。</summary>
         private void RefreshPlayerInfoView(int playerId)
         {
             var pm = PlayerManager.Instance;
@@ -188,6 +247,7 @@ namespace CardBattle.UI
             StartCoroutine(AnimateCardToHand(cardView, targetLocal, handV));
         }
 
+        /// <summary>カードを手札の目標位置まで移動させ、完了後に HandVisualizer に追加する。</summary>
         private IEnumerator AnimateCardToHand(CardView cardView, Vector3 targetLocalPosition, HandVisualizer targetHand)
         {
             var rt = cardView.transform as RectTransform;
@@ -211,6 +271,7 @@ namespace CardBattle.UI
             targetHand?.AddCard(cardView);
         }
 
+        /// <summary>ユニット召喚時: 手札のカードを消し、フィールドに UnitView を生成・配置する。</summary>
         private void OnUnitSummoned(int playerId, Card card, Unit unit)
         {
             var handV = playerId == 0 ? handVisualizerPlayer0 : handVisualizerPlayer1;
