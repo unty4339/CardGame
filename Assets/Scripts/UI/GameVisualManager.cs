@@ -108,8 +108,8 @@ namespace CardBattle.UI
         }
 
 
-         private Vector2 attackTargetPositionWhenAttackingOpponentPlayer = new Vector2(0, 300);
-         private Vector2 attackTargetPositionWhenAttackingSelfPlayer = new Vector2(0, -300);
+         private Vector2 attackTargetPositionWhenAttackingOpponentPlayer = new Vector2(0, 200);
+         private Vector2 attackTargetPositionWhenAttackingSelfPlayer = new Vector2(0, -200);
 
         /// <summary>攻撃対象の突進先・ビデオ再生位置を解決し、攻撃モーション完了後に onComplete を呼ぶ。</summary>
         private IEnumerator PlayAttackAndResolveCoroutine(Unit attacker, object target, Action onComplete)
@@ -156,7 +156,7 @@ namespace CardBattle.UI
                     onReachedTarget: () =>
                     {
                         if (VideoEffectManager.Instance != null && prefab != null)
-                            VideoEffectManager.Instance.PlayEffect(prefab, effectPosition, 1f);
+                            VideoEffectManager.Instance.PlayEffect(prefab, effectPosition, 2f, 0.3f);
                     },
                     onComplete: null);
             }
