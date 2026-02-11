@@ -11,7 +11,9 @@ namespace CardBattle.ScriptableObjects
     public class DeckRecipe : ScriptableObject
     {
         [SerializeField] private List<DeckRecipeEntry> entries = new();
+        [SerializeField] private PartnerTemplate partnerTemplate;
 
         public IReadOnlyList<DeckRecipeEntry> Entries => entries;
+        public PartnerTemplate PartnerTemplate => partnerTemplate;
     }
 }

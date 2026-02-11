@@ -3,6 +3,7 @@ using System.Collections;
 using System.Threading.Tasks;
 using CardBattle.Core.Deck;
 using CardBattle.Core.Field;
+using CardBattle.Core.Partner;
 using CardBattle.Core.Player;
 using CardBattle.Managers;
 using UnityEngine;
@@ -28,7 +29,12 @@ namespace CardBattle.UI
         [SerializeField] private float drawAnimationDuration = 0.3f;
         [SerializeField] private PlayerInfoView player0InfoView;
         [SerializeField] private PlayerInfoView player1InfoView;
+        [SerializeField] private Transform partnerZoneAnchorPlayer0;
+        [SerializeField] private Transform partnerZoneAnchorPlayer1;
+        [SerializeField] private PartnerCardView partnerCardViewPrefab;
 
+        private PartnerCardView _partnerCardViewPlayer0;
+        private PartnerCardView _partnerCardViewPlayer1;
 
         // Addressables でロードするビデオプレハブ
         private const string BombVideoAddress = "Assets/Prefabs/BombVideo.prefab";
@@ -55,9 +61,15 @@ namespace CardBattle.UI
             {
                 pm.OnCardDrawn += PlayDrawAnimation;
                 pm.OnUnitSummoned += OnUnitSummoned;
-                pm.OnPlayerDataChanged += RefreshPlayerInfoView;
+                pm.OnPlayerDataChanged += OnPlayerDataChanged;
                 pm.OnUnitHpChanged += OnUnitHpChanged;
                 pm.OnUnitDestroyed += OnUnitDestroyed;
+            }
+            var partnerManager = PartnerManager.Instance;
+            if (partnerManager != null)
+            {
+                partnerManager.OnPartnerSummoned += OnPartnerSummoned;
+                partnerManager.OnPartnerReturnedToZone += OnPartnerReturnedToZone;
             }
             StartCoroutine(LoadVideoPrefabs());
         }
@@ -92,10 +104,22 @@ namespace CardBattle.UI
             {
                 pm.OnCardDrawn -= PlayDrawAnimation;
                 pm.OnUnitSummoned -= OnUnitSummoned;
-                pm.OnPlayerDataChanged -= RefreshPlayerInfoView;
+                pm.OnPlayerDataChanged -= OnPlayerDataChanged;
                 pm.OnUnitHpChanged -= OnUnitHpChanged;
                 pm.OnUnitDestroyed -= OnUnitDestroyed;
             }
+            var partnerManager = PartnerManager.Instance;
+            if (partnerManager != null)
+            {
+                partnerManager.OnPartnerSummoned -= OnPartnerSummoned;
+                partnerManager.OnPartnerReturnedToZone -= OnPartnerReturnedToZone;
+            }
+        }
+
+        private void OnPlayerDataChanged(int playerId)
+        {
+            RefreshPlayerInfoView(playerId);
+            RefreshPartnerZoneView(playerId);
         }
 
         /// <summary>
@@ -211,6 +235,64 @@ namespace CardBattle.UI
 
             yield return new WaitForSeconds(0.15f);
             Destroy(view.gameObject);
+        }
+
+        /// <summary>指定プレイヤーのパートナーゾーン用ビューを生成・更新する。</summary>
+        private void RefreshPartnerZoneView(int playerId)
+        {
+            var pm = PlayerManager.Instance;
+            if (pm == null) return;
+            var data = pm.GetPlayerData(playerId);
+            if (data?.PartnerZone?.Partner == null) return;
+
+            var anchor = playerId == 0 ? partnerZoneAnchorPlayer0 : partnerZoneAnchorPlayer1;
+            var fieldV = playerId == 0 ? fieldVisualizerPlayer0 : fieldVisualizerPlayer1;
+            var currentView = playerId == 0 ? _partnerCardViewPlayer0 : _partnerCardViewPlayer1;
+
+            if (anchor == null || partnerCardViewPrefab == null) return;
+
+            if (currentView != null)
+            {
+                Destroy(currentView.gameObject);
+                if (playerId == 0)
+                    _partnerCardViewPlayer0 = null;
+                else
+                    _partnerCardViewPlayer1 = null;
+            }
+
+            var view = Instantiate(partnerCardViewPrefab, anchor);
+            view.transform.localPosition = Vector3.zero;
+            view.Initialize(data.PartnerZone.Partner);
+            view.OwnerPlayerId = playerId;
+            view.SetDraggable(!data.PartnerZone.IsPartnerOnField);
+            if (fieldV != null && fieldV.FieldAreaRect != null)
+                view.SetFieldAreaRect(fieldV.FieldAreaRect);
+
+            if (playerId == 0)
+                _partnerCardViewPlayer0 = view;
+            else
+                _partnerCardViewPlayer1 = view;
+        }
+
+        /// <summary>パートナーがユニットとして召喚されたとき、フィールドに UnitView を追加する。</summary>
+        private void OnPartnerSummoned(int playerId, Unit unit)
+        {
+            var fieldV = playerId == 0 ? fieldVisualizerPlayer0 : fieldVisualizerPlayer1;
+            if (unitPrefab == null || fieldV == null) return;
+
+            var spawnPos = fieldV.GetNextSpawnPosition();
+            var unitView = Instantiate(unitPrefab, fieldV.transform);
+            (unitView.transform as RectTransform).localPosition = spawnPos;
+            unitView.Bind(unit);
+            fieldV.AddUnit(unitView);
+
+            RefreshPartnerZoneView(playerId);
+        }
+
+        /// <summary>パートナーがゾーンに戻ったとき、パートナーゾーン表示を再表示・ドラッグ可能にする。</summary>
+        private void OnPartnerReturnedToZone(int playerId)
+        {
+            RefreshPartnerZoneView(playerId);
         }
 
         /// <summary>指定プレイヤーの PlayerInfoView を PlayerManager のデータで更新する。</summary>

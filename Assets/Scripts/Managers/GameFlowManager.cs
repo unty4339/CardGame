@@ -25,8 +25,6 @@ namespace CardBattle.Managers
 
         [SerializeField] private DeckRecipe player0DeckRecipe;
         [SerializeField] private DeckRecipe player1DeckRecipe;
-        [SerializeField] private Partner player0Partner;
-        [SerializeField] private Partner player1Partner;
 
         private int _firstPlayer;
         private int _currentTurnPlayer;
@@ -67,6 +65,20 @@ namespace CardBattle.Managers
             entries.Add(new DeckRecipeEntry { Template = cardTemplate, Count = 30 });
 
             return deckRecipe;
+        }
+
+        /// <summary>
+        /// ダミー用のパートナー（Cost=1, 1/1, キーワードなし）を生成する
+        /// </summary>
+        private static Partner CreateDummyPartner()
+        {
+            return new Partner
+            {
+                Cost = 1,
+                BaseHP = 1,
+                BaseAttack = 1,
+                Keywords = new System.Collections.Generic.List<KeywordAbility>()
+            };
         }
 
         private static void SetPrivateField(object target, string fieldName, object value)
@@ -121,11 +133,10 @@ namespace CardBattle.Managers
                     playerManager.DrawCard(i);
                 }
 
-                var partner = i == 0 ? player0Partner : player1Partner;
-                if (partner != null)
-                {
-                    partnerManager?.PlacePartner(i, partner);
-                }
+                var partner = recipe.PartnerTemplate != null
+                    ? recipe.PartnerTemplate.ToPartner()
+                    : CreateDummyPartner();
+                partnerManager?.PlacePartner(i, partner);
             }
 
             playerManager.NotifyPlayerDataChanged(0);

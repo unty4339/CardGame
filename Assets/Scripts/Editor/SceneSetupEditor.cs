@@ -28,8 +28,9 @@ namespace CardBattle.Editor
             var canvasData = CreateCanvasHierarchy(root);
             var cardPrefab = GetOrCreateCardViewPrefab();
             var unitPrefab = GetOrCreateUnitViewPrefab();
+            var partnerCardViewPrefab = GetOrCreatePartnerCardViewPrefab();
 
-            WireReferences(root, gameSystems, canvasData, cardPrefab, unitPrefab);
+            WireReferences(root, gameSystems, canvasData, cardPrefab, unitPrefab, partnerCardViewPrefab);
             EnsureCameraAndEventSystem(root);
 
             EditorSceneManager.MarkSceneDirty(UnityEngine.SceneManagement.SceneManager.GetActiveScene());
@@ -80,6 +81,8 @@ namespace CardBattle.Editor
             public FieldVisualizer FieldVisualizerPlayer1;
             public RectTransform FieldAreaRectPlayer0;
             public RectTransform FieldAreaRectPlayer1;
+            public Transform PartnerZoneAnchorPlayer0;
+            public Transform PartnerZoneAnchorPlayer1;
             public RectTransform OpponentPlayerAttackZoneRect;
             public PlayerInfoView Player0InfoView;
             public PlayerInfoView Player1InfoView;
@@ -112,6 +115,22 @@ namespace CardBattle.Editor
             deck1Rect.anchorMax = new Vector2(0.9f, 0.9f);
             deck1Rect.offsetMin = Vector2.zero;
             deck1Rect.offsetMax = Vector2.zero;
+
+            var partnerZone0Go = new GameObject("PartnerZoneAnchorPlayer0");
+            partnerZone0Go.transform.SetParent(canvasGo.transform, false);
+            var partnerZone0Rect = partnerZone0Go.AddComponent<RectTransform>();
+            partnerZone0Rect.anchorMin = new Vector2(0.02f, 0.1f);
+            partnerZone0Rect.anchorMax = new Vector2(0.08f, 0.3f);
+            partnerZone0Rect.offsetMin = Vector2.zero;
+            partnerZone0Rect.offsetMax = Vector2.zero;
+
+            var partnerZone1Go = new GameObject("PartnerZoneAnchorPlayer1");
+            partnerZone1Go.transform.SetParent(canvasGo.transform, false);
+            var partnerZone1Rect = partnerZone1Go.AddComponent<RectTransform>();
+            partnerZone1Rect.anchorMin = new Vector2(0.92f, 0.7f);
+            partnerZone1Rect.anchorMax = new Vector2(0.98f, 0.9f);
+            partnerZone1Rect.offsetMin = Vector2.zero;
+            partnerZone1Rect.offsetMax = Vector2.zero;
 
             var hand0Go = new GameObject("HandAreaPlayer0");
             hand0Go.transform.SetParent(canvasGo.transform, false);
@@ -220,6 +239,8 @@ namespace CardBattle.Editor
                 FieldVisualizerPlayer1 = fieldVisualizer1,
                 FieldAreaRectPlayer0 = fieldArea0Rect,
                 FieldAreaRectPlayer1 = fieldArea1Rect,
+                PartnerZoneAnchorPlayer0 = partnerZone0Rect,
+                PartnerZoneAnchorPlayer1 = partnerZone1Rect,
                 OpponentPlayerAttackZoneRect = opponentZoneRect,
                 Player0InfoView = player0InfoView,
                 Player1InfoView = player1InfoView,
@@ -469,8 +490,84 @@ namespace CardBattle.Editor
             return AssetDatabase.LoadAssetAtPath<GameObject>(path).GetComponent<UnitView>();
         }
 
+        private static PartnerCardView GetOrCreatePartnerCardViewPrefab()
+        {
+            var path = $"{PrefabsPath}/PartnerCardView.prefab";
+            var existing = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+            if (existing != null)
+            {
+                return existing.GetComponent<PartnerCardView>();
+            }
+
+            if (!AssetDatabase.IsValidFolder("Assets/Prefabs"))
+            {
+                AssetDatabase.CreateFolder("Assets", "Prefabs");
+            }
+
+            var go = new GameObject("PartnerCardView");
+            var rect = go.AddComponent<RectTransform>();
+            rect.sizeDelta = new Vector2(100, 140);
+            go.AddComponent<Image>().color = new Color(0.9f, 0.85f, 0.7f);
+            var canvasGroup = go.AddComponent<CanvasGroup>();
+
+            var costGo = new GameObject("Cost");
+            costGo.transform.SetParent(go.transform, false);
+            var costRect = costGo.AddComponent<RectTransform>();
+            costRect.anchorMin = new Vector2(0, 1);
+            costRect.anchorMax = new Vector2(0, 1);
+            costRect.anchoredPosition = new Vector2(15, -15);
+            costRect.sizeDelta = new Vector2(30, 20);
+            var costText = costGo.AddComponent<Text>();
+            costText.text = "0";
+            costText.fontSize = 14;
+
+            var attackGo = new GameObject("Attack");
+            attackGo.transform.SetParent(go.transform, false);
+            var attackRect = attackGo.AddComponent<RectTransform>();
+            attackRect.anchorMin = new Vector2(0, 0);
+            attackRect.anchorMax = new Vector2(0, 0);
+            attackRect.anchoredPosition = new Vector2(15, 15);
+            attackRect.sizeDelta = new Vector2(30, 20);
+            var attackText = attackGo.AddComponent<Text>();
+            attackText.text = "0";
+            attackText.fontSize = 14;
+
+            var hpGo = new GameObject("HP");
+            hpGo.transform.SetParent(go.transform, false);
+            var hpRect = hpGo.AddComponent<RectTransform>();
+            hpRect.anchorMin = new Vector2(1, 0);
+            hpRect.anchorMax = new Vector2(1, 0);
+            hpRect.anchoredPosition = new Vector2(-15, 15);
+            hpRect.sizeDelta = new Vector2(30, 20);
+            var hpText = hpGo.AddComponent<Text>();
+            hpText.text = "0";
+            hpText.fontSize = 14;
+
+            var artworkGo = new GameObject("Artwork");
+            artworkGo.transform.SetParent(go.transform, false);
+            var artworkRect = artworkGo.AddComponent<RectTransform>();
+            artworkRect.anchorMin = new Vector2(0.1f, 0.25f);
+            artworkRect.anchorMax = new Vector2(0.9f, 0.95f);
+            artworkRect.offsetMin = Vector2.zero;
+            artworkRect.offsetMax = Vector2.zero;
+            artworkGo.AddComponent<Image>().color = new Color(0.5f, 0.5f, 0.5f);
+
+            var partnerCardView = go.AddComponent<PartnerCardView>();
+            var so = new SerializedObject(partnerCardView);
+            so.FindProperty("artwork").objectReferenceValue = artworkGo.GetComponent<Image>();
+            so.FindProperty("cost").objectReferenceValue = costText;
+            so.FindProperty("attack").objectReferenceValue = attackText;
+            so.FindProperty("hp").objectReferenceValue = hpText;
+            so.FindProperty("canvasGroup").objectReferenceValue = canvasGroup;
+            so.ApplyModifiedPropertiesWithoutUndo();
+
+            PrefabUtility.SaveAsPrefabAsset(go, path);
+            Object.DestroyImmediate(go);
+            return AssetDatabase.LoadAssetAtPath<GameObject>(path).GetComponent<PartnerCardView>();
+        }
+
         private static void WireReferences(GameObject root, GameObject gameSystems, CanvasData canvasData,
-            CardView cardPrefab, UnitView unitPrefab)
+            CardView cardPrefab, UnitView unitPrefab, PartnerCardView partnerCardViewPrefab)
         {
             var gameVisualManager = gameSystems.GetComponent<GameVisualManager>();
 
@@ -485,6 +582,9 @@ namespace CardBattle.Editor
             gvmSo.FindProperty("unitPrefab").objectReferenceValue = unitPrefab;
             gvmSo.FindProperty("player0InfoView").objectReferenceValue = canvasData.Player0InfoView;
             gvmSo.FindProperty("player1InfoView").objectReferenceValue = canvasData.Player1InfoView;
+            gvmSo.FindProperty("partnerZoneAnchorPlayer0").objectReferenceValue = canvasData.PartnerZoneAnchorPlayer0;
+            gvmSo.FindProperty("partnerZoneAnchorPlayer1").objectReferenceValue = canvasData.PartnerZoneAnchorPlayer1;
+            gvmSo.FindProperty("partnerCardViewPrefab").objectReferenceValue = partnerCardViewPrefab;
             gvmSo.ApplyModifiedPropertiesWithoutUndo();
 
             var fv0So = new SerializedObject(canvasData.FieldVisualizerPlayer0);

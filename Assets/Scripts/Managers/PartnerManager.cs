@@ -14,6 +14,12 @@ namespace CardBattle.Managers
         private static PartnerManager _instance;
         public static PartnerManager Instance => _instance;
 
+        /// <summary>パートナーがユニットとしてフィールドに登場したときに発火する (playerId, unit)</summary>
+        public event Action<int, Unit> OnPartnerSummoned;
+
+        /// <summary>パートナーがゾーンに戻ったときに発火する (playerId)</summary>
+        public event Action<int> OnPartnerReturnedToZone;
+
         private void Awake()
         {
             if (_instance != null && _instance != this)
@@ -85,6 +91,7 @@ namespace CardBattle.Managers
             data.FieldZone.Units.Add(unit);
             data.PartnerZone.IsPartnerOnField = true;
 
+            OnPartnerSummoned?.Invoke(playerId, unit);
             return true;
         }
 
@@ -107,6 +114,8 @@ namespace CardBattle.Managers
 
             data.FieldZone.Units.Remove(partnerUnit);
             data.PartnerZone.IsPartnerOnField = false;
+
+            OnPartnerReturnedToZone?.Invoke(ownerPlayerId);
         }
     }
 }
