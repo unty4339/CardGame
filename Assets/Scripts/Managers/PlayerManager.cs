@@ -79,6 +79,8 @@ namespace CardBattle.Managers
         public void NotifyUnitDestroyed(Unit unit)
         {
             OnUnitDestroyed?.Invoke(unit);
+            if (unit != null && unit.IsPartner)
+                PartnerManager.Instance?.ReturnPartnerToZone(unit, unit.OwnerPlayerId);
         }
 
         private void Awake()

@@ -34,6 +34,14 @@ namespace CardBattle.UI
         [SerializeField] private Transform partnerZoneAnchorPlayer1;
         [SerializeField] private PartnerCardView partnerCardViewPrefab;
 
+        [Header("手札→場 召喚アニメ")]
+        [SerializeField] private float handCardPlayOutDuration = 0.3f;
+        [SerializeField] private float handCardPlayOutOffsetY = 150f;
+        [SerializeField] private float unitSummonInDuration = 0.25f;
+        [SerializeField] private float unitSummonStartOffsetY = 100f;
+        [SerializeField] private float unitSummonPlaceDownOffset = -15f;
+        [SerializeField] private float unitSummonPlaceDuration = 0.08f;
+
         private PartnerCardView _partnerCardViewPlayer0;
         private PartnerCardView _partnerCardViewPlayer1;
 
@@ -277,19 +285,26 @@ namespace CardBattle.UI
                 _partnerCardViewPlayer1 = view;
         }
 
-        /// <summary>パートナーがユニットとして召喚されたとき、フィールドに UnitView を追加する。</summary>
+        /// <summary>パートナーがユニットとして召喚されたとき、カードを上に消す演出とユニットを上から出現させる演出を再生する。</summary>
         private void OnPartnerSummoned(int playerId, Unit unit)
         {
             var fieldV = playerId == 0 ? fieldVisualizerPlayer0 : fieldVisualizerPlayer1;
             if (unitPrefab == null || fieldV == null) return;
 
-            var spawnPos = fieldV.GetNextSpawnPosition();
-            var unitView = Instantiate(unitPrefab, fieldV.transform);
-            (unitView.transform as RectTransform).localPosition = spawnPos;
-            unitView.Bind(unit);
-            fieldV.AddUnit(unitView);
+            var nextSpawnPos = fieldV.GetNextSpawnPosition();
+            fieldV.NotifyNewSlotWillBeAdded();
 
-            RefreshPartnerZoneView(playerId);
+            var currentPartnerView = playerId == 0 ? _partnerCardViewPlayer0 : _partnerCardViewPlayer1;
+            if (currentPartnerView != null)
+                StartCoroutine(AnimatePartnerCardPlayOut(currentPartnerView, playerId));
+
+            var unitView = Instantiate(unitPrefab, fieldV.transform);
+            var unitRt = unitView.transform as RectTransform;
+            if (unitRt != null)
+                unitRt.localPosition = nextSpawnPos + Vector3.up * unitSummonStartOffsetY;
+            unitView.SetAlpha(0.3f);
+            unitView.Bind(unit);
+            StartCoroutine(AnimateUnitSummonIn(unitView, nextSpawnPos, fieldV));
         }
 
         /// <summary>パートナーがゾーンに戻ったとき、パートナーゾーン表示を再表示・ドラッグ可能にする。</summary>
@@ -368,26 +383,146 @@ namespace CardBattle.UI
             }
         }
 
-        /// <summary>ユニット召喚時: 手札のカードを消し、フィールドに UnitView を生成・配置する。</summary>
+        /// <summary>上方向へ移動しつつフェードアウトするモーション。手札・パートナー共通。</summary>
+        private IEnumerator AnimatePlayOutMotion(RectTransform rt, CanvasGroup cg, float duration, float offsetY)
+        {
+            if (rt == null) yield break;
+            var startPos = rt.localPosition;
+            var endPos = startPos + Vector3.up * offsetY;
+            var startAlpha = cg != null ? cg.alpha : 1f;
+            var elapsed = 0f;
+            while (elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+                var t = Mathf.Clamp01(elapsed / duration);
+                rt.localPosition = Vector3.Lerp(startPos, endPos, t);
+                if (cg != null)
+                    cg.alpha = Mathf.Lerp(startAlpha, 0f, t);
+                yield return null;
+            }
+        }
+
+        /// <summary>手札カードを上に移動させつつフェードアウトし、完了後に RemoveCard + Destroy する。</summary>
+        private IEnumerator AnimateHandCardPlayOut(CardView cardView, HandVisualizer handV)
+        {
+            if (cardView == null || handV == null)
+            {
+                if (cardView != null && handV != null)
+                {
+                    handV.RemoveCard(cardView);
+                    Destroy(cardView.gameObject);
+                }
+                yield break;
+            }
+
+            var rt = cardView.transform as RectTransform;
+            var canvasGroup = cardView.GetComponentInChildren<CanvasGroup>();
+            if (rt == null)
+            {
+                handV.RemoveCard(cardView);
+                Destroy(cardView.gameObject);
+                yield break;
+            }
+
+            yield return AnimatePlayOutMotion(rt, canvasGroup, handCardPlayOutDuration, handCardPlayOutOffsetY);
+            handV.RemoveCard(cardView);
+            Destroy(cardView.gameObject);
+        }
+
+        /// <summary>パートナーカードを上に移動させつつフェードアウトし、完了後に RefreshPartnerZoneView する。</summary>
+        private IEnumerator AnimatePartnerCardPlayOut(PartnerCardView partnerView, int playerId)
+        {
+            if (partnerView == null)
+            {
+                RefreshPartnerZoneView(playerId);
+                yield break;
+            }
+
+            var rt = partnerView.transform as RectTransform;
+            var cg = partnerView.GetComponentInChildren<CanvasGroup>();
+            if (rt == null)
+            {
+                RefreshPartnerZoneView(playerId);
+                yield break;
+            }
+
+            yield return AnimatePlayOutMotion(rt, cg, handCardPlayOutDuration, handCardPlayOutOffsetY);
+            RefreshPartnerZoneView(playerId);
+        }
+
+        /// <summary>ユニットを上・半透明から下へ移動＋フェードインし、「置く」ように少し下へ移動してから AddUnit する。</summary>
+        private IEnumerator AnimateUnitSummonIn(UnitView unitView, Vector3 spawnPos, FieldVisualizer fieldV)
+        {
+            if (unitView == null || fieldV == null) yield break;
+
+            var rt = unitView.transform as RectTransform;
+            if (rt == null)
+            {
+                fieldV.AddUnit(unitView);
+                yield break;
+            }
+
+            unitView.SetAlpha(1f);
+
+            // 第1段階: 上・半透明から spawnPos へ移動＋フェードイン
+            var startPos = spawnPos + Vector3.up * unitSummonStartOffsetY;
+            rt.localPosition = startPos;
+            unitView.SetAlpha(0.3f);
+
+            var elapsed = 0f;
+            while (elapsed < unitSummonInDuration)
+            {
+                elapsed += Time.deltaTime;
+                var t = Mathf.Clamp01(elapsed / unitSummonInDuration);
+                rt.localPosition = Vector3.Lerp(startPos, spawnPos, t);
+                unitView.SetAlpha(Mathf.Lerp(0.3f, 1f, t));
+                yield return null;
+            }
+            rt.localPosition = spawnPos;
+            unitView.SetAlpha(1f);
+
+            // 第2段階: 「置く」ように少し下へ動かしてからスロット位置に戻す
+            var placeDown = spawnPos + Vector3.up * unitSummonPlaceDownOffset;
+            var halfPlace = unitSummonPlaceDuration * 0.5f;
+            elapsed = 0f;
+            while (elapsed < halfPlace)
+            {
+                elapsed += Time.deltaTime;
+                var t = Mathf.Clamp01(elapsed / halfPlace);
+                rt.localPosition = Vector3.Lerp(spawnPos, placeDown, t);
+                yield return null;
+            }
+            elapsed = 0f;
+            while (elapsed < halfPlace)
+            {
+                elapsed += Time.deltaTime;
+                var t = Mathf.Clamp01(elapsed / halfPlace);
+                rt.localPosition = Vector3.Lerp(placeDown, spawnPos, t);
+                yield return null;
+            }
+            rt.localPosition = spawnPos;
+
+            fieldV.AddUnit(unitView);
+        }
+
+        /// <summary>ユニット召喚時: 手札カードを上に消す演出、フィールドにユニットを上から出現させる演出、既存ユニットのレイアウト補間を実行する。</summary>
         private void OnUnitSummoned(int playerId, Card card, Unit unit)
         {
             var handV = playerId == 0 ? handVisualizerPlayer0 : handVisualizerPlayer1;
             var fieldV = playerId == 0 ? fieldVisualizerPlayer0 : fieldVisualizerPlayer1;
 
-            var cardView = handV?.GetCardViewByCard(card);
-            if (cardView != null)
-            {
-                handV.RemoveCard(cardView);
-                Destroy(cardView.gameObject);
-            }
-
             if (unitPrefab == null || fieldV == null) return;
 
-            var spawnPos = fieldV.GetNextSpawnPosition();
+            var nextSpawnPos = fieldV.GetNextSpawnPosition();
+            fieldV.NotifyNewSlotWillBeAdded();
+
+            var cardView = handV?.GetCardViewByCard(card);
+            if (cardView != null)
+                StartCoroutine(AnimateHandCardPlayOut(cardView, handV));
+
             var unitView = Instantiate(unitPrefab, fieldV.transform);
-            (unitView.transform as RectTransform).localPosition = spawnPos;
             unitView.Bind(unit);
-            fieldV.AddUnit(unitView);
+            StartCoroutine(AnimateUnitSummonIn(unitView, nextSpawnPos, fieldV));
         }
 
         /// <summary>

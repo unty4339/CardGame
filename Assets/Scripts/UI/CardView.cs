@@ -101,16 +101,14 @@ namespace CardBattle.UI
         public void OnDrag(PointerEventData eventData)
         {
             if (_rectTransform == null) return;
-            if (_canvas != null && _canvas.renderMode == RenderMode.ScreenSpaceOverlay)
-                _rectTransform.position = new Vector3(eventData.position.x, eventData.position.y, _rectTransform.position.z);
-            else if (RectTransformUtility.ScreenPointToWorldPointInRectangle(_rectTransform, eventData.position, eventData.pressEventCamera, out var world))
-                _rectTransform.position = new Vector3(world.x, world.y, _rectTransform.position.z);
+            BezierUIArrow.Instance?.UpdateArrow((Vector2)_rectTransform.position, eventData.position);
         }
 
         public void OnEndDrag(PointerEventData eventData)
         {
             if (canvasGroup != null) canvasGroup.blocksRaycasts = true;
             _isDragging = false;
+            BezierUIArrow.Instance?.Hide();
 
             var isOverField = fieldAreaRect != null && RectTransformUtility.RectangleContainsScreenPoint(fieldAreaRect, eventData.position, eventData.pressEventCamera);
 

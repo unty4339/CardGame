@@ -39,7 +39,7 @@ namespace CardBattle.UI
             var halfArc = arcAngle * 0.5f * Mathf.Deg2Rad;
             var t = totalCount > 1 ? (float)index / (totalCount - 1) : 0f;
             var angle = Mathf.PI + Mathf.Lerp(-halfArc, halfArc, t);
-            var radius = spacing * Mathf.Max(1, totalCount) * 0.5f;
+            var radius = spacing * Mathf.Max(1, totalCount) * 1.2f;
             var x = radius * Mathf.Sin(angle);
             var y = handBaseY + radius * (-Mathf.Cos(angle) - 1f);
             return new Vector3(x, y, 0f);

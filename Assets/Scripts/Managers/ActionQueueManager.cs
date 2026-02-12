@@ -181,6 +181,8 @@ namespace CardBattle.Managers
                                     && choices != null
                                     && choices.Count > 1;
 
+                                Debug.Log($"[Spell] choices.Count={choices?.Count ?? 0}, ownerId={ownerId}, needTargetSelection={needTargetSelection}");
+
                                 if (needTargetSelection)
                                 {
                                     var ctx = new SpellTargetSelectionContext
@@ -233,11 +235,14 @@ namespace CardBattle.Managers
 
         private IEnumerator SpellWithTargetSelectionCoroutine(SpellTargetSelectionContext ctx, IList<EffectTarget> choices)
         {
+            Debug.Log($"[SpellWithTargetSelectionCoroutine] started, choices.Count={choices?.Count ?? 0}");
+
             var task = EffectResolver.Instance.RequestTargetAsync(choices, ctx.OwnerId);
             while (!task.IsCompleted)
                 yield return null;
 
             var target = task.GetAwaiter().GetResult();
+            Debug.Log($"[SpellWithTargetSelectionCoroutine] task completed, target.UnitInstanceId={target.UnitInstanceId?.ToString() ?? "null"}");
             var playerManager = PlayerManager.Instance;
             ApplySpellResolution(ctx.OwnerId, ctx.OpponentId, ctx.State, ctx.SpellEffect, target,
                 ctx.OpponentUnitsBefore, ctx.MyUnitsBefore);

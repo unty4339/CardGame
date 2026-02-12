@@ -27,6 +27,8 @@ namespace CardBattle.UI
 
         private Canvas _canvas;
         private RectTransform _rectTransform;
+        private CanvasGroup _canvasGroup;
+
         private GameObject _dragGhost;
         private bool _isDraggingForAttack;
         private Color _normalColor = Color.white;
@@ -38,6 +40,17 @@ namespace CardBattle.UI
         {
             _rectTransform = transform as RectTransform;
             _canvas = GetComponentInParent<Canvas>();
+            if (!TryGetComponent(out _canvasGroup))
+                _canvasGroup = gameObject.AddComponent<CanvasGroup>();
+        }
+
+        /// <summary>
+        /// 召喚フェードイン等で使用。0〜1で透明度を指定する。
+        /// </summary>
+        public void SetAlpha(float alpha)
+        {
+            if (_canvasGroup != null)
+                _canvasGroup.alpha = Mathf.Clamp01(alpha);
         }
         private void Update()
         {
@@ -58,24 +71,20 @@ namespace CardBattle.UI
             if (controller == null || !controller.TryStartAttackDrag(this)) return;
 
             _isDraggingForAttack = true;
-            CreateDragGhost(eventData);
         }
 
         public void OnDrag(PointerEventData eventData)
         {
-            if (!_isDraggingForAttack || _dragGhost == null) return;
-            var rt = _dragGhost.transform as RectTransform;
-            if (rt == null) return;
-            if (_canvas != null && _canvas.renderMode == RenderMode.ScreenSpaceOverlay)
-                rt.position = new Vector3(eventData.position.x, eventData.position.y, rt.position.z);
-            else if (eventData.pressEventCamera != null && RectTransformUtility.ScreenPointToWorldPointInRectangle(rt, eventData.position, eventData.pressEventCamera, out var world))
-                rt.position = new Vector3(world.x, world.y, rt.position.z);
+            if (!_isDraggingForAttack) return;
+            if (_rectTransform == null) return;
+            BezierUIArrow.Instance?.UpdateArrow((Vector2)_rectTransform.position, eventData.position);
         }
 
         public void OnEndDrag(PointerEventData eventData)
         {
             if (_isDraggingForAttack)
             {
+                BezierUIArrow.Instance?.Hide();
                 var controller = AttackDragController.Instance;
                 controller?.OnAttackDragEnded(this, eventData.position, eventData.pressEventCamera);
                 DestroyDragGhost();
@@ -88,6 +97,7 @@ namespace CardBattle.UI
             var gameFlow = GameFlowManager.Instance;
             if (gameFlow == null || gameFlow.CurrentPhase != GamePhase.TargetSelection) return;
             if (!_selectableForEffect || Unit == null) return;
+            Debug.Log($"[UnitView.OnPointerClick] confirming target Unit.InstanceId={Unit.InstanceId}");
             EffectResolver.Instance?.ConfirmTarget(EffectTarget.Unit(Unit.InstanceId));
         }
 

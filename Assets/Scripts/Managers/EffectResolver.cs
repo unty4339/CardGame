@@ -39,13 +39,25 @@ namespace CardBattle.Managers
         /// </summary>
         public Task<EffectTarget> RequestTargetAsync(IList<EffectTarget> choices, int actingPlayerId, CancellationToken cancellation = default)
         {
-            if (choices == null || choices.Count == 0)
-                return Task.FromResult(EffectTarget.None());
-            if (actingPlayerId != 0)
-                return Task.FromResult(choices[0]);
-            if (choices.Count == 1)
-                return Task.FromResult(choices[0]);
+            Debug.Log($"[EffectResolver.RequestTargetAsync] entry: choices.Count={choices?.Count ?? -1}, actingPlayerId={actingPlayerId}");
 
+            if (choices == null || choices.Count == 0)
+            {
+                Debug.Log("[EffectResolver] early return: no choices");
+                return Task.FromResult(EffectTarget.None());
+            }
+            if (actingPlayerId != 0)
+            {
+                Debug.Log("[EffectResolver] early return: not player 0");
+                return Task.FromResult(choices[0]);
+            }
+            if (choices.Count == 1)
+            {
+                Debug.Log("[EffectResolver] early return: only 1 choice");
+                return Task.FromResult(choices[0]);
+            }
+
+            Debug.Log("[EffectResolver] entering UI target selection");
             _currentActingPlayerId = actingPlayerId;
             _currentTcs = new TaskCompletionSource<EffectTarget>();
 
@@ -118,6 +130,7 @@ namespace CardBattle.Managers
         /// </summary>
         public void ConfirmTarget(EffectTarget target)
         {
+            Debug.Log($"[EffectResolver.ConfirmTarget] called, target.UnitInstanceId={target.UnitInstanceId?.ToString() ?? "null"}");
             ClearTargetSelectionHighlights();
             GameFlowManager.Instance?.ExitTargetSelection();
             _currentTcs?.TrySetResult(target);

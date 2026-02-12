@@ -27,22 +27,12 @@ namespace CardBattle.Battle
             {
                 playerManager?.NotifyUnitDestroyed(defender);
                 defenderField.Units.Remove(defender);
-                if (defender.IsPartner)
-                {
-                    var partnerManager = PartnerManager.Instance;
-                    partnerManager?.ReturnPartnerToZone(defender, defender.OwnerPlayerId);
-                }
             }
 
             if (attacker.HP <= 0)
             {
                 playerManager?.NotifyUnitDestroyed(attacker);
                 attackerField.Units.Remove(attacker);
-                if (attacker.IsPartner)
-                {
-                    var partnerManager = PartnerManager.Instance;
-                    partnerManager?.ReturnPartnerToZone(attacker, attacker.OwnerPlayerId);
-                }
             }
         }
 
