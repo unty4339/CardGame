@@ -1,7 +1,9 @@
+using CardBattle.Core;
 using CardBattle.Core.Deck;
 using CardBattle.Core.Enums;
 using CardBattle.Managers;
 using CardBattle.ScriptableObjects;
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -14,9 +16,10 @@ namespace CardBattle.UI
     public class CardView : MonoBehaviour, IDragHandler, IBeginDragHandler, IEndDragHandler
     {
         [SerializeField] private Image artwork;
-        [SerializeField] private Text cost;
-        [SerializeField] private Text attack;
-        [SerializeField] private Text hp;
+        [SerializeField] private TextMeshProUGUI cost;
+        [SerializeField] private TextMeshProUGUI attack;
+        [SerializeField] private TextMeshProUGUI hp;
+        [SerializeField] private TextMeshProUGUI cardNameText;
         [SerializeField] private CanvasGroup canvasGroup;
         [SerializeField] private RectTransform fieldAreaRect;
 
@@ -57,10 +60,10 @@ namespace CardBattle.UI
             if (data?.Template == null) return;
 
             if (cost != null) cost.text = data.Template.PlayCost.ToString();
-            if (attack != null) attack.text = data.Template.CardType == CardType.Unit && data.Template.UnitData != null
-                ? data.Template.UnitData.BaseAttack.ToString() : "0";
-            if (hp != null) hp.text = data.Template.CardType == CardType.Unit && data.Template.UnitData != null
-                ? data.Template.UnitData.BaseHP.ToString() : "0";
+            var unitTemplate = data.Template as UnitCardTemplateBase;
+            if (attack != null) attack.text = unitTemplate != null ? unitTemplate.BaseAttack.ToString() : "0";
+            if (hp != null) hp.text = unitTemplate != null ? unitTemplate.BaseHP.ToString() : "0";
+            if (cardNameText != null) cardNameText.text = data.Template.CardName;
             if (artwork != null) { /* 絵柄は CardTemplate に Sprite が無いため未設定 */ }
         }
 
@@ -111,12 +114,28 @@ namespace CardBattle.UI
 
             var isOverField = fieldAreaRect != null && RectTransformUtility.RectangleContainsScreenPoint(fieldAreaRect, eventData.position, eventData.pressEventCamera);
 
-            Debug.Log("isOverField: " + isOverField);
-            if (isOverField && Card != null)
+            var gameFlow = GameFlowManager.Instance;
+            var playerManager = PlayerManager.Instance;
+            if (isOverField && Card != null && gameFlow != null && gameFlow.CurrentPhase == GamePhase.Normal && playerManager != null)
             {
-                var success = PlayerManager.Instance != null && PlayerManager.Instance.TryPlayCard(OwnerPlayerId, Card);
-                if (success)
-                    return;
+                var data = playerManager.GetPlayerData(OwnerPlayerId);
+                if (data != null && data.CurrentMP >= Card.Template.PlayCost)
+                {
+                    if (Card.Template.CardType == CardType.Unit)
+                    {
+                        if (playerManager.TryPlayCard(OwnerPlayerId, Card))
+                            return;
+                    }
+                    else
+                    {
+                        ActionQueueManager.Instance?.AddAction(new GameAction
+                        {
+                            ActionType = ActionType.Play,
+                            SourceCard = Card
+                        });
+                        return;
+                    }
+                }
             }
 
             _handVisualizer?.UpdateLayout();

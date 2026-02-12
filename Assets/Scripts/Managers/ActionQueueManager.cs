@@ -1,5 +1,11 @@
 using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using CardBattle.AI;
 using CardBattle.Core;
+using CardBattle.Core.Deck;
+using CardBattle.Core.Effects;
 using CardBattle.Core.Field;
 using CardBattle.UI;
 using UnityEngine;
@@ -130,7 +136,13 @@ namespace CardBattle.Managers
 
                 if (template.CardType == Core.Enums.CardType.Unit)
                 {
-                    playerManager.TryPlayCard(ownerId, action.SourceCard);
+                    playerManager.TryPlayCard(ownerId, action.SourceCard, () =>
+                    {
+                        var dialogue = DialogueManager.Instance;
+                        dialogue?.OnCardPlayed(action.SourceCard);
+                        NotifyActionAnimationCompleted();
+                    });
+                    return;
                 }
                 else
                 {
@@ -138,7 +150,64 @@ namespace CardBattle.Managers
                     playerManager.NotifyPlayerDataChanged(ownerId);
                     ownerData.Hand.Cards.Remove(action.SourceCard);
 
-                    if (template.CardType == Core.Enums.CardType.Totem)
+                    if (template.CardType == Core.Enums.CardType.Spell)
+                    {
+                        var spellEffect = template as ISpellEffect;
+                        if (spellEffect != null)
+                        {
+                            var opponentId = ownerId == 0 ? 1 : 0;
+                            var myData = ownerData;
+                            var oppData = playerManager.GetPlayerData(opponentId);
+                            if (oppData != null)
+                            {
+                                var state = new GameState
+                                {
+                                    MyPlayerId = ownerId,
+                                    OpponentPlayerId = opponentId,
+                                    MyField = myData.FieldZone,
+                                    OpponentField = oppData.FieldZone,
+                                    MyHand = new List<Card>(myData.Hand.Cards),
+                                    MyHP = myData.HP,
+                                    OpponentHP = oppData.HP,
+                                    MyMP = myData.CurrentMP,
+                                    OpponentMP = oppData.CurrentMP
+                                };
+                                var opponentUnitsBefore = new List<Unit>(state.OpponentField.Units);
+                                var myUnitsBefore = new List<Unit>(state.MyField.Units);
+
+                                var choices = spellEffect.GetAvailableTargets(state);
+                                var needTargetSelection = EffectResolver.Instance != null
+                                    && ownerId == 0
+                                    && choices != null
+                                    && choices.Count > 1;
+
+                                if (needTargetSelection)
+                                {
+                                    var ctx = new SpellTargetSelectionContext
+                                    {
+                                        Action = action,
+                                        OwnerId = ownerId,
+                                        OpponentId = opponentId,
+                                        State = state,
+                                        SpellEffect = spellEffect,
+                                        OpponentUnitsBefore = opponentUnitsBefore,
+                                        MyUnitsBefore = myUnitsBefore
+                                    };
+                                    StartCoroutine(SpellWithTargetSelectionCoroutine(ctx, choices));
+                                    return;
+                                }
+
+                                var target = EffectResolver.Instance != null
+                                    ? EffectResolver.Instance.RequestTargetAsync(choices, ownerId).GetAwaiter().GetResult()
+                                    : (choices != null && choices.Count > 0 ? choices[0] : EffectTarget.None());
+
+                                ApplySpellResolution(ownerId, opponentId, state, spellEffect, target,
+                                    opponentUnitsBefore, myUnitsBefore);
+                            }
+                            playerManager.NotifySpellPlayed(ownerId, action.SourceCard);
+                        }
+                    }
+                    else if (template.CardType == Core.Enums.CardType.Totem)
                     {
                         var unitManager = UnitManager.Instance;
                         unitManager?.SpawnTotemFromCard(action.SourceCard, ownerId, ownerData.FieldZone);
@@ -149,6 +218,74 @@ namespace CardBattle.Managers
                 dialogueManager?.OnCardPlayed(action.SourceCard);
             }
             NotifyActionAnimationCompleted();
+        }
+
+        private struct SpellTargetSelectionContext
+        {
+            public GameAction Action;
+            public int OwnerId;
+            public int OpponentId;
+            public GameState State;
+            public ISpellEffect SpellEffect;
+            public List<Unit> OpponentUnitsBefore;
+            public List<Unit> MyUnitsBefore;
+        }
+
+        private IEnumerator SpellWithTargetSelectionCoroutine(SpellTargetSelectionContext ctx, IList<EffectTarget> choices)
+        {
+            var task = EffectResolver.Instance.RequestTargetAsync(choices, ctx.OwnerId);
+            while (!task.IsCompleted)
+                yield return null;
+
+            var target = task.GetAwaiter().GetResult();
+            var playerManager = PlayerManager.Instance;
+            ApplySpellResolution(ctx.OwnerId, ctx.OpponentId, ctx.State, ctx.SpellEffect, target,
+                ctx.OpponentUnitsBefore, ctx.MyUnitsBefore);
+            playerManager?.NotifySpellPlayed(ctx.OwnerId, ctx.Action.SourceCard);
+            var dialogueManager = DialogueManager.Instance;
+            dialogueManager?.OnCardPlayed(ctx.Action.SourceCard);
+            NotifyActionAnimationCompleted();
+        }
+
+        private static void ApplySpellResolution(
+            int ownerId,
+            int opponentId,
+            GameState state,
+            ISpellEffect spellEffect,
+            EffectTarget target,
+            List<Unit> opponentUnitsBefore,
+            List<Unit> myUnitsBefore)
+        {
+            var playerManager = PlayerManager.Instance;
+            if (playerManager == null) return;
+
+            if (target.Kind == EffectTargetKind.Unit && target.UnitInstanceId != null)
+                GameVisualManager.Instance?.PlayEffectAtUnit(opponentId, target.UnitInstanceId.Value);
+            spellEffect.Resolve(target, state);
+
+            var myData = playerManager.GetPlayerData(ownerId);
+            var oppData = playerManager.GetPlayerData(opponentId);
+            if (myData != null) myData.HP = state.MyHP;
+            if (oppData != null) oppData.HP = state.OpponentHP;
+            playerManager.NotifyPlayerDataChanged(ownerId);
+            playerManager.NotifyPlayerDataChanged(opponentId);
+
+            foreach (var u in opponentUnitsBefore)
+            {
+                if (!state.OpponentField.Units.Any(x => x.InstanceId == u.InstanceId))
+                    playerManager.NotifyUnitDestroyed(u);
+            }
+            if (target.Kind == EffectTargetKind.Unit && target.UnitInstanceId != null)
+            {
+                var damagedUnit = state.OpponentField.Units.Find(x => x.InstanceId == target.UnitInstanceId.Value);
+                if (damagedUnit != null)
+                    playerManager.NotifyUnitHpChanged(damagedUnit);
+            }
+            foreach (var u in myUnitsBefore)
+            {
+                if (!state.MyField.Units.Any(x => x.InstanceId == u.InstanceId))
+                    playerManager.NotifyUnitDestroyed(u);
+            }
         }
 
         private void ProcessAttackAction(GameAction action)

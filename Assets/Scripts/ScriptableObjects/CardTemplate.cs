@@ -1,24 +1,18 @@
 using CardBattle.Core.Enums;
-using UnityEngine;
 
 namespace CardBattle.ScriptableObjects
 {
     /// <summary>
-    /// カードそれ自体の性能データについて責任を持つ
+    /// カード設計データの共通基底。種別ごとの基底（UnitCardTemplateBase 等）が継承する。
     /// </summary>
-    [CreateAssetMenu(fileName = "NewCardTemplate", menuName = "CardBattle/Card Template")]
-    public class CardTemplate : ScriptableObject
+    public abstract class CardTemplate
     {
-        [SerializeField] private CardType cardType;
-        [SerializeField] private int playCost;
-        [SerializeField] private UnitData unitData;
-        [SerializeField] private TotemData totemData;
-        [SerializeField] private SpellEffect spellEffect;
+        protected int playCost;
+        protected string cardName;
 
-        public CardType CardType => cardType;
-        public int PlayCost => playCost;
-        public UnitData UnitData => unitData;
-        public TotemData TotemData => totemData;
-        public SpellEffect SpellEffect => spellEffect;
+        public virtual int PlayCost => playCost;
+        public virtual string CardName => !string.IsNullOrEmpty(cardName) ? cardName : GetType().Name;
+        public abstract CardType CardType { get; }
+        public virtual TotemData TotemData => null;
     }
 }

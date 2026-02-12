@@ -1,5 +1,4 @@
 using System;
-using System.Reflection;
 using CardBattle.Core;
 using CardBattle.Core.Deck;
 using CardBattle.Core.Enums;
@@ -23,12 +22,15 @@ namespace CardBattle.Managers
         /// </summary>
         public int CurrentTurnPlayerId => _currentTurnPlayer;
 
-        [SerializeField] private DeckRecipe player0DeckRecipe;
-        [SerializeField] private DeckRecipe player1DeckRecipe;
+        /// <summary>
+        /// 現在のゲームフェーズ。ターゲット選択中は通常操作を制限する。
+        /// </summary>
+        public Core.Enums.GamePhase CurrentPhase => _currentPhase;
 
         private int _firstPlayer;
         private int _currentTurnPlayer;
         private bool _mulliganDone;
+        private Core.Enums.GamePhase _currentPhase = Core.Enums.GamePhase.Normal;
 
         private void Awake()
         {
@@ -47,24 +49,19 @@ namespace CardBattle.Managers
         }
 
         /// <summary>
-        /// コスト1・1/1・効果なしのユニットカード30枚のダミーデッキレシピをランタイムで生成する
+        /// ターゲット選択モードに入る。EffectResolver が呼ぶ。
         /// </summary>
-        private static DeckRecipe CreateDummyDeckRecipe()
+        public void EnterTargetSelection()
         {
-            var unitData = ScriptableObject.CreateInstance<UnitData>();
-            SetPrivateField(unitData, "baseHP", 1);
-            SetPrivateField(unitData, "baseAttack", 1);
+            _currentPhase = Core.Enums.GamePhase.TargetSelection;
+        }
 
-            var cardTemplate = ScriptableObject.CreateInstance<CardTemplate>();
-            SetPrivateField(cardTemplate, "cardType", CardType.Unit);
-            SetPrivateField(cardTemplate, "playCost", 1);
-            SetPrivateField(cardTemplate, "unitData", unitData);
-
-            var deckRecipe = ScriptableObject.CreateInstance<DeckRecipe>();
-            var entries = GetPrivateField<System.Collections.Generic.List<DeckRecipeEntry>>(deckRecipe, "entries");
-            entries.Add(new DeckRecipeEntry { Template = cardTemplate, Count = 30 });
-
-            return deckRecipe;
+        /// <summary>
+        /// ターゲット選択モードを終了する。
+        /// </summary>
+        public void ExitTargetSelection()
+        {
+            _currentPhase = Core.Enums.GamePhase.Normal;
         }
 
         /// <summary>
@@ -79,18 +76,6 @@ namespace CardBattle.Managers
                 BaseAttack = 1,
                 Keywords = new System.Collections.Generic.List<KeywordAbility>()
             };
-        }
-
-        private static void SetPrivateField(object target, string fieldName, object value)
-        {
-            var field = target.GetType().GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Instance);
-            field?.SetValue(target, value);
-        }
-
-        private static T GetPrivateField<T>(object target, string fieldName)
-        {
-            var field = target.GetType().GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Instance);
-            return (T)field?.GetValue(target);
         }
 
         /// <summary>
@@ -108,11 +93,7 @@ namespace CardBattle.Managers
 
             for (var i = 0; i < 2; i++)
             {
-                var recipe = i == 0 ? player0DeckRecipe : player1DeckRecipe;
-                if (recipe == null)
-                {
-                    recipe = CreateDummyDeckRecipe();
-                }
+                var recipe = DeckRecipe.CreateForPlayer(i);
                 var deck = DeckBuilder.BuildDeck(recipe);
 
                 var playerData = new PlayerData

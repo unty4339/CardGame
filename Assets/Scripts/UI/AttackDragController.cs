@@ -49,7 +49,7 @@ namespace CardBattle.UI
             var playerManager = PlayerManager.Instance;
             if (gameFlow == null || actionQueue == null || playerManager == null)
                 return false;
-            if (gameFlow.CurrentTurnPlayerId != 0 || actionQueue.IsBusy)
+            if (gameFlow.CurrentPhase != Core.Enums.GamePhase.Normal || gameFlow.CurrentTurnPlayerId != 0 || actionQueue.IsBusy)
                 return false;
 
             var actions = playerManager.GetUnitActions(0, source.Unit);

@@ -1,3 +1,4 @@
+using CardBattle.Core.Effects;
 using CardBattle.Core.Enums;
 
 namespace CardBattle.Core
@@ -11,5 +12,10 @@ namespace CardBattle.Core
         public object Target { get; set; }
         public Deck.Card SourceCard { get; set; }
         public Field.Unit SourceUnit { get; set; }
+
+        /// <summary>
+        /// プレイ＋召喚時効果でターゲットを選んだ場合の選択結果
+        /// </summary>
+        public EffectTarget? SelectedEffectTarget { get; set; }
     }
 }

@@ -42,6 +42,19 @@ namespace CardBattle.Managers
         /// </summary>
         public event Action<Unit> OnUnitDestroyed;
 
+        /// <summary>
+        /// 呪文を手札から使用したときに発火する。プレイヤーIDと使用したCardが渡される。手札UIの更新用。
+        /// </summary>
+        public event Action<int, Card> OnSpellPlayed;
+
+        /// <summary>
+        /// 呪文プレイを通知する（ActionQueueManager の Spell 処理から呼ぶ）
+        /// </summary>
+        public void NotifySpellPlayed(int playerId, Card card)
+        {
+            OnSpellPlayed?.Invoke(playerId, card);
+        }
+
         private readonly Dictionary<int, PlayerData> _players = new();
 
         /// <summary>
@@ -131,8 +144,9 @@ namespace CardBattle.Managers
 
         /// <summary>
         /// プレイヤーIDとカードを受け取り、そのカードをプレイしてユニットを召喚する。成功時は true、不成立時は false を返す。
+        /// 召喚時効果の解決（対象選択含む）が完了したときに onPlayComplete を呼ぶ。非同期の場合は効果解決後に呼ばれる。
         /// </summary>
-        public bool TryPlayCard(int playerId, Card card)
+        public bool TryPlayCard(int playerId, Card card, Action onPlayComplete = null)
         {
             var data = GetPlayerData(playerId);
             if (data == null || card == null || card.Template == null) return false;
@@ -144,9 +158,14 @@ namespace CardBattle.Managers
             data.CurrentMP -= card.Template.PlayCost;
             NotifyPlayerDataChanged(playerId);
 
-            var unit = UnitManager.Instance?.SpawnUnitFromCard(card, playerId, data.FieldZone);
-            if (unit != null)
-                OnUnitSummoned?.Invoke(playerId, card, unit);
+            void OnEffectsResolved(Unit unit)
+            {
+                if (unit != null)
+                    OnUnitSummoned?.Invoke(playerId, card, unit);
+                onPlayComplete?.Invoke();
+            }
+
+            var unit = UnitManager.Instance?.SpawnUnitFromCard(card, playerId, data.FieldZone, OnEffectsResolved);
             return true;
         }
 

@@ -36,7 +36,7 @@ namespace CardBattle.Managers
         {
             if (card == null) return;
 
-            StartCoroutine(PlayDialogueCoroutine(card.Template?.name ?? "Card"));
+            StartCoroutine(PlayDialogueCoroutine(card.Template?.CardName ?? "Card"));
         }
 
         /// <summary>

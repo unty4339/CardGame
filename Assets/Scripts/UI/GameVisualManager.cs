@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using CardBattle.Core.Deck;
 using CardBattle.Core.Field;
@@ -61,6 +62,7 @@ namespace CardBattle.UI
             {
                 pm.OnCardDrawn += PlayDrawAnimation;
                 pm.OnUnitSummoned += OnUnitSummoned;
+                pm.OnSpellPlayed += OnSpellPlayed;
                 pm.OnPlayerDataChanged += OnPlayerDataChanged;
                 pm.OnUnitHpChanged += OnUnitHpChanged;
                 pm.OnUnitDestroyed += OnUnitDestroyed;
@@ -104,6 +106,7 @@ namespace CardBattle.UI
             {
                 pm.OnCardDrawn -= PlayDrawAnimation;
                 pm.OnUnitSummoned -= OnUnitSummoned;
+                pm.OnSpellPlayed -= OnSpellPlayed;
                 pm.OnPlayerDataChanged -= OnPlayerDataChanged;
                 pm.OnUnitHpChanged -= OnUnitHpChanged;
                 pm.OnUnitDestroyed -= OnUnitDestroyed;
@@ -353,6 +356,18 @@ namespace CardBattle.UI
             targetHand?.AddCard(cardView);
         }
 
+        /// <summary>呪文プレイ時: 手札のカードビューを消す。</summary>
+        private void OnSpellPlayed(int playerId, Card card)
+        {
+            var handV = playerId == 0 ? handVisualizerPlayer0 : handVisualizerPlayer1;
+            var cardView = handV?.GetCardViewByCard(card);
+            if (cardView != null)
+            {
+                handV.RemoveCard(cardView);
+                Destroy(cardView.gameObject);
+            }
+        }
+
         /// <summary>ユニット召喚時: 手札のカードを消し、フィールドに UnitView を生成・配置する。</summary>
         private void OnUnitSummoned(int playerId, Card card, Unit unit)
         {
@@ -381,6 +396,40 @@ namespace CardBattle.UI
         public void PlaySummonAnimation()
         {
             // 召喚演出は OnUnitSummoned 内で UnitView 生成・配置として実装済み
+        }
+
+        /// <summary>
+        /// 指定プレイヤーの指定 InstanceId の Unit に対応する UnitView を返す。効果のターゲット選択用。
+        /// </summary>
+        public UnitView GetUnitViewByInstanceId(int ownerPlayerId, int instanceId)
+        {
+            var unit = PlayerManager.Instance?.GetUnitByInstanceId(ownerPlayerId, instanceId);
+            if (unit == null) return null;
+            var fv = ownerPlayerId == 0 ? fieldVisualizerPlayer0 : fieldVisualizerPlayer1;
+            return fv?.GetViewByUnit(unit);
+        }
+
+        /// <summary>
+        /// 指定プレイヤーのフィールドビジュアライザーを返す。ターゲット選択時に全 UnitView をハイライトする用。
+        /// </summary>
+        public FieldVisualizer GetFieldVisualizer(int playerId)
+        {
+            return playerId == 0 ? fieldVisualizerPlayer0 : fieldVisualizerPlayer1;
+        }
+
+        /// <summary>
+        /// 指定ユニットの位置で効果演出を再生する。召喚時効果の解決時などに使用。
+        /// </summary>
+        public void PlayEffectAtUnit(int ownerPlayerId, int instanceId)
+        {
+            var view = GetUnitViewByInstanceId(ownerPlayerId, instanceId);
+            if (view == null || _bombVideoPrefab == null) return;
+            var uiParent = VideoEffectManager.Instance != null ? VideoEffectManager.Instance.uiParent : null;
+            if (uiParent == null) return;
+            var worldPos = view.transform.position;
+            var localInParent = uiParent.InverseTransformPoint(worldPos);
+            var effectPosition = new Vector2(localInParent.x, localInParent.y);
+            VideoEffectManager.Instance?.PlayEffect(_bombVideoPrefab, effectPosition, 2f);
         }
     }
 }

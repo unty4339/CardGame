@@ -16,6 +16,9 @@ namespace CardBattle.UI
         /// </summary>
         public void OnEndTurnClicked()
         {
+            var gameFlow = GameFlowManager.Instance;
+            if (gameFlow != null && gameFlow.CurrentPhase != Core.Enums.GamePhase.Normal)
+                return;
             var actionQueueManager = ActionQueueManager.Instance;
             var action = new GameAction { ActionType = ActionType.TurnEnd };
             actionQueueManager.AddAction(action);

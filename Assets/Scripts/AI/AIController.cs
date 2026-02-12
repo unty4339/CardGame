@@ -1,10 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using CardBattle.Core;
 using CardBattle.Core.Deck;
+using CardBattle.Core.Effects;
 using CardBattle.Core.Enums;
 using CardBattle.Core.Field;
 using CardBattle.Managers;
+using CardBattle.ScriptableObjects;
 using UnityEngine;
 
 namespace CardBattle.AI
@@ -18,6 +21,11 @@ namespace CardBattle.AI
         public static AIController Instance => _instance;
 
         private StateEvaluator _stateEvaluator;
+
+        /// <summary>
+        /// 1枚のカードに対する効果ターゲット候補の最大数。枝刈りで計算量を抑える。
+        /// </summary>
+        private const int MaxEffectTargetsPerCard = 5;
 
         private void Awake()
         {
@@ -76,7 +84,12 @@ namespace CardBattle.AI
 
             foreach (var card in state.MyHand)
             {
-                if (card.Template.PlayCost <= state.MyMP)
+                if (card.Template.PlayCost > state.MyMP) continue;
+
+                var unitBase = card.Template as UnitCardTemplateBase;
+                var onSummonEffects = unitBase?.GetOnSummonEffects()?.ToList() ?? new List<IOnSummonEffect>();
+
+                if (onSummonEffects.Count == 0)
                 {
                     actions.Add(new GameAction
                     {
@@ -84,6 +97,44 @@ namespace CardBattle.AI
                         SourceCard = card,
                         Target = null
                     });
+                    continue;
+                }
+
+                var (dummyHp, dummyAttack, _) = unitBase.GetUnitStats();
+                var firstEffect = onSummonEffects[0];
+                var playState = CloneState(state);
+                var dummyUnit = new Unit
+                {
+                    HP = dummyHp,
+                    Attack = dummyAttack,
+                    OwnerPlayerId = state.MyPlayerId
+                };
+                playState.MyField.Units.Add(dummyUnit);
+                var choices = firstEffect.GetAvailableTargets(playState, dummyUnit);
+
+                if (choices == null || choices.Count == 0)
+                {
+                    actions.Add(new GameAction
+                    {
+                        ActionType = ActionType.Play,
+                        SourceCard = card,
+                        Target = null,
+                        SelectedEffectTarget = EffectTarget.None()
+                    });
+                }
+                else
+                {
+                    var count = Mathf.Min(choices.Count, MaxEffectTargetsPerCard);
+                    for (var i = 0; i < count; i++)
+                    {
+                        actions.Add(new GameAction
+                        {
+                            ActionType = ActionType.Play,
+                            SourceCard = card,
+                            Target = null,
+                            SelectedEffectTarget = choices[i]
+                        });
+                    }
                 }
             }
 
@@ -135,7 +186,31 @@ namespace CardBattle.AI
             {
                 nextState.MyHand.RemoveAll(c => c.CardID == action.SourceCard.CardID);
                 nextState.MyMP -= action.SourceCard.Template.PlayCost;
-                // ユニット/トーテムの登場処理は簡略化
+
+                var playUnitBase = action.SourceCard.Template as UnitCardTemplateBase;
+                if (action.SourceCard.Template.CardType == CardType.Unit && playUnitBase != null)
+                {
+                    var (summonHp, summonAttack, summonKeywords) = playUnitBase.GetUnitStats();
+                    var summonedUnit = new Unit
+                    {
+                        HP = summonHp,
+                        Attack = summonAttack,
+                        TurnsOnField = 0,
+                        CanAttack = false,
+                        Keywords = new List<Core.Enums.KeywordAbility>(summonKeywords),
+                        OwnerPlayerId = nextState.MyPlayerId,
+                        IsPartner = false
+                    };
+                    nextState.MyField.Units.Add(summonedUnit);
+
+                    if (action.SelectedEffectTarget != null)
+                    {
+                        var onSummonEffects = playUnitBase.GetOnSummonEffects()?.ToList() ?? new List<IOnSummonEffect>();
+                        var effect = onSummonEffects.FirstOrDefault();
+                        if (effect != null)
+                            effect.Resolve(action.SelectedEffectTarget.Value, nextState, summonedUnit);
+                    }
+                }
             }
             else if (action.ActionType == ActionType.Attack && action.SourceUnit != null)
             {

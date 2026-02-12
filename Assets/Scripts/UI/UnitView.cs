@@ -1,5 +1,7 @@
 using System;
 using System.Collections;
+using CardBattle.Core.Effects;
+using CardBattle.Core.Enums;
 using CardBattle.Core.Field;
 using CardBattle.Managers;
 using Coffee.UIEffects;
@@ -12,7 +14,7 @@ namespace CardBattle.UI
     /// <summary>
     /// フィールドに出た後のキャラクター表示について責任を持つ。攻撃ドラッグ（自分ユニット→相手ユニット/相手プレイヤーゾーン）に対応。
     /// </summary>
-    public class UnitView : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
+    public class UnitView : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler, IPointerClickHandler
     {
         [SerializeField] private Text attackText;
         [SerializeField] private Text hpText;
@@ -27,6 +29,8 @@ namespace CardBattle.UI
         private RectTransform _rectTransform;
         private GameObject _dragGhost;
         private bool _isDraggingForAttack;
+        private Color _normalColor = Color.white;
+        private bool _selectableForEffect;
 
         public Unit Unit { get; private set; }
 
@@ -79,6 +83,40 @@ namespace CardBattle.UI
             }
         }
 
+        public void OnPointerClick(PointerEventData eventData)
+        {
+            var gameFlow = GameFlowManager.Instance;
+            if (gameFlow == null || gameFlow.CurrentPhase != GamePhase.TargetSelection) return;
+            if (!_selectableForEffect || Unit == null) return;
+            EffectResolver.Instance?.ConfirmTarget(EffectTarget.Unit(Unit.InstanceId));
+        }
+
+        /// <summary>
+        /// 効果のターゲットとして選択可能かどうか。ターゲット選択モード時にハイライトと連動させる。
+        /// </summary>
+        public void SetSelectableForEffect(bool selectable)
+        {
+            _selectableForEffect = selectable;
+        }
+
+        /// <summary>
+        /// ターゲット候補としてハイライト表示する
+        /// </summary>
+        public void SetHighlight(bool on)
+        {
+            if (bodyImage != null)
+                bodyImage.color = on ? Color.Lerp(_normalColor, Color.yellow, 0.4f) : _normalColor;
+        }
+
+        /// <summary>
+        /// ターゲット外としてグレーアウト（半透明）する
+        /// </summary>
+        public void SetGrayedOut(bool gray)
+        {
+            if (bodyImage != null)
+                bodyImage.color = gray ? new Color(0.6f, 0.6f, 0.6f, 0.6f) : _normalColor;
+        }
+
         private void CreateDragGhost(PointerEventData eventData)
         {
             if (_canvas == null || _rectTransform == null) return;
@@ -126,6 +164,7 @@ namespace CardBattle.UI
         public void Bind(Unit unitData)
         {
             Unit = unitData;
+            if (bodyImage != null) _normalColor = bodyImage.color;
             RefreshDisplay();
         }
 

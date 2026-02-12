@@ -41,6 +41,14 @@ namespace CardBattle.UI
         }
 
         /// <summary>
+        /// フィールド上の全 UnitView を返す（ターゲット選択時のハイライト用）
+        /// </summary>
+        public IReadOnlyList<UnitView> GetUnitViews()
+        {
+            return _units;
+        }
+
+        /// <summary>
         /// Unitに対応するUnitViewを返す。無ければ null。
         /// </summary>
         public UnitView GetViewByUnit(Unit unit)
