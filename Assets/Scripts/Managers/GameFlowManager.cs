@@ -157,6 +157,10 @@ namespace CardBattle.Managers
 
             _currentTurnPlayer = turnPlayerId;
 
+            var turnActionLog = TurnActionLog.Instance;
+            turnActionLog?.ClearForNewTurn(turnPlayerId);
+            DialogueManager.Instance?.OnTurnStarted(turnPlayerId);
+
             if (turnPlayerId == 1)
             {
                 var aiController = AI.AIController.Instance;

@@ -6,10 +6,12 @@ using UnityEngine.Events;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem.UI;
 using UnityEngine.UI;
+using TMPro;
 using CardBattle.Managers;
 using CardBattle.Battle;
 using CardBattle.AI;
 using CardBattle.UI;
+using CardBattle.ScriptableObjects;
 
 namespace CardBattle.Editor
 {
@@ -29,8 +31,9 @@ namespace CardBattle.Editor
             var cardPrefab = GetOrCreateCardViewPrefab();
             var unitPrefab = GetOrCreateUnitViewPrefab();
             var partnerCardViewPrefab = GetOrCreatePartnerCardViewPrefab();
+            var dialogueBlockPrefab = GetOrCreateDialogueBlockPrefab();
 
-            WireReferences(root, gameSystems, canvasData, cardPrefab, unitPrefab, partnerCardViewPrefab);
+            WireReferences(root, gameSystems, canvasData, cardPrefab, unitPrefab, partnerCardViewPrefab, dialogueBlockPrefab);
             EnsureCameraAndEventSystem(root);
 
             EditorSceneManager.MarkSceneDirty(UnityEngine.SceneManagement.SceneManager.GetActiveScene());
@@ -57,6 +60,7 @@ namespace CardBattle.Editor
 
             go.AddComponent<GameFlowManager>();
             go.AddComponent<PlayerManager>();
+            go.AddComponent<TurnActionLog>();
             go.AddComponent<PartnerManager>();
             go.AddComponent<UnitManager>();
             go.AddComponent<EffectResolver>();
@@ -88,6 +92,7 @@ namespace CardBattle.Editor
             public PlayerInfoView Player0InfoView;
             public PlayerInfoView Player1InfoView;
             public Transform CanvasTransform;
+            public DialogueLog DialogueLog;
         }
 
         private static CanvasData CreateCanvasHierarchy(GameObject root)
@@ -229,6 +234,9 @@ namespace CardBattle.Editor
             var opponentZoneRect = CreateOpponentPlayerAttackZone(player1InfoGo.transform);
 
             CreateEndTurnButton(canvasGo.transform);
+            CreateHighSpeedModeButton(canvasGo.transform);
+
+            var dialogueLog = CreateDialogueLogArea(canvasGo.transform);
 
             return new CanvasData
             {
@@ -245,8 +253,42 @@ namespace CardBattle.Editor
                 OpponentPlayerAttackZoneRect = opponentZoneRect,
                 Player0InfoView = player0InfoView,
                 Player1InfoView = player1InfoView,
-                CanvasTransform = canvasGo.transform
+                CanvasTransform = canvasGo.transform,
+                DialogueLog = dialogueLog
             };
+        }
+
+        private static DialogueLog CreateDialogueLogArea(Transform canvasTransform)
+        {
+            var areaGo = new GameObject("DialogueLogArea");
+            Undo.RegisterCreatedObjectUndo(areaGo, "Create DialogueLogArea");
+            areaGo.transform.SetParent(canvasTransform, false);
+            var areaRect = areaGo.AddComponent<RectTransform>();
+            areaRect.anchorMin = new Vector2(0.78f, 0.2f);
+            areaRect.anchorMax = new Vector2(1f, 0.8f);
+            areaRect.offsetMin = new Vector2(-10, 10);
+            areaRect.offsetMax = new Vector2(-10, -10);
+
+            var contentGo = new GameObject("Content");
+            contentGo.transform.SetParent(areaGo.transform, false);
+            var contentRect = contentGo.AddComponent<RectTransform>();
+            contentRect.anchorMin = Vector2.zero;
+            contentRect.anchorMax = Vector2.one;
+            contentRect.offsetMin = Vector2.zero;
+            contentRect.offsetMax = Vector2.zero;
+            var vlg = contentGo.AddComponent<VerticalLayoutGroup>();
+            vlg.childAlignment = TextAnchor.LowerCenter;
+            vlg.childControlWidth = true;
+            vlg.childControlHeight = false;
+            vlg.childForceExpandWidth = true;
+            vlg.childForceExpandHeight = false;
+            vlg.spacing = 6;
+
+            var dialogueLog = areaGo.AddComponent<DialogueLog>();
+            var so = new SerializedObject(dialogueLog);
+            so.FindProperty("blockContainer").objectReferenceValue = contentRect;
+            so.ApplyModifiedPropertiesWithoutUndo();
+            return dialogueLog;
         }
 
         private static RectTransform CreateOpponentPlayerAttackZone(Transform parent)
@@ -317,6 +359,36 @@ namespace CardBattle.Editor
             var text = textGo.AddComponent<Text>();
             text.text = "ターン終了";
             text.fontSize = 18;
+            text.alignment = TextAnchor.MiddleCenter;
+        }
+
+        private static void CreateHighSpeedModeButton(Transform parent)
+        {
+            var go = new GameObject("HighSpeedModeButton");
+            go.transform.SetParent(parent, false);
+            var rect = go.AddComponent<RectTransform>();
+            rect.anchorMin = new Vector2(0.85f, 0.92f);
+            rect.anchorMax = new Vector2(0.98f, 0.98f);
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+
+            var image = go.AddComponent<Image>();
+            image.color = new Color(0.4f, 0.4f, 0.5f);
+
+            var button = go.AddComponent<Button>();
+            var highSpeedButton = go.AddComponent<HighSpeedModeButton>();
+            UnityEventTools.AddPersistentListener(button.onClick, new UnityAction(highSpeedButton.OnHighSpeedClicked));
+
+            var textGo = new GameObject("Text");
+            textGo.transform.SetParent(go.transform, false);
+            var textRect = textGo.AddComponent<RectTransform>();
+            textRect.anchorMin = Vector2.zero;
+            textRect.anchorMax = Vector2.one;
+            textRect.offsetMin = Vector2.zero;
+            textRect.offsetMax = Vector2.zero;
+            var text = textGo.AddComponent<Text>();
+            text.text = "通常";
+            text.fontSize = 16;
             text.alignment = TextAnchor.MiddleCenter;
         }
 
@@ -567,8 +639,91 @@ namespace CardBattle.Editor
             return AssetDatabase.LoadAssetAtPath<GameObject>(path).GetComponent<PartnerCardView>();
         }
 
+        private static string GetSerializedPropertyNames(SerializedObject so)
+        {
+            var names = new System.Collections.Generic.List<string>();
+            var it = so.GetIterator();
+            it.Next(true);
+            while (it.Next(false))
+                names.Add(it.name);
+            return string.Join(", ", names);
+        }
+
+        private static DialogueBlock GetOrCreateDialogueBlockPrefab()
+        {
+            var path = $"{PrefabsPath}/DialogueBlock.prefab";
+            var existing = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+            if (existing != null)
+            {
+                return existing.GetComponent<DialogueBlock>();
+            }
+
+            if (!AssetDatabase.IsValidFolder("Assets/Prefabs"))
+            {
+                AssetDatabase.CreateFolder("Assets", "Prefabs");
+            }
+
+            var go = new GameObject("DialogueBlock");
+            var rect = go.AddComponent<RectTransform>();
+            rect.sizeDelta = new Vector2(220, 56);
+            var bubbleImage = go.AddComponent<Image>();
+            bubbleImage.color = new Color(1f, 1f, 1f, 0.95f);
+            var canvasGroup = go.AddComponent<CanvasGroup>();
+
+            var textGo = new GameObject("Text");
+            textGo.transform.SetParent(go.transform, false);
+            var textRect = textGo.AddComponent<RectTransform>();
+            textRect.anchorMin = Vector2.zero;
+            textRect.anchorMax = Vector2.one;
+            textRect.offsetMin = new Vector2(8, 6);
+            textRect.offsetMax = new Vector2(-8, -6);
+            var tmp = textGo.AddComponent<TextMeshProUGUI>();
+            tmp.text = "";
+            tmp.fontSize = 14;
+            tmp.overflowMode = TMPro.TextOverflowModes.Overflow;
+
+            var dialogueBlock = go.AddComponent<DialogueBlock>();
+            if (dialogueBlock == null)
+            {
+                Debug.LogError("[GetOrCreateDialogueBlockPrefab] AddComponent<DialogueBlock>() returned null.");
+                Object.DestroyImmediate(go);
+                return null;
+            }
+            var so = new SerializedObject(dialogueBlock);
+
+            var textLabelProp = so.FindProperty("textLabel");
+            if (textLabelProp == null)
+                Debug.LogError("[GetOrCreateDialogueBlockPrefab] FindProperty(\"textLabel\") is null. SerializedObject property names: " + GetSerializedPropertyNames(so));
+            else
+                textLabelProp.objectReferenceValue = tmp;
+
+            var bubbleImageProp = so.FindProperty("bubbleImage");
+            if (bubbleImageProp == null)
+                Debug.LogError("[GetOrCreateDialogueBlockPrefab] FindProperty(\"bubbleImage\") is null. SerializedObject property names: " + GetSerializedPropertyNames(so));
+            else
+                bubbleImageProp.objectReferenceValue = bubbleImage;
+
+            var canvasGroupProp = so.FindProperty("canvasGroup");
+            if (canvasGroupProp == null)
+                Debug.LogError("[GetOrCreateDialogueBlockPrefab] FindProperty(\"canvasGroup\") is null. SerializedObject property names: " + GetSerializedPropertyNames(so));
+            else
+                canvasGroupProp.objectReferenceValue = canvasGroup;
+
+            var speakerIconImageProp = so.FindProperty("speakerIconImage");
+            if (speakerIconImageProp == null)
+                Debug.LogError("[GetOrCreateDialogueBlockPrefab] FindProperty(\"speakerIconImage\") is null. SerializedObject property names: " + GetSerializedPropertyNames(so));
+            else
+                speakerIconImageProp.objectReferenceValue = null;
+
+            so.ApplyModifiedPropertiesWithoutUndo();
+
+            PrefabUtility.SaveAsPrefabAsset(go, path);
+            Object.DestroyImmediate(go);
+            return AssetDatabase.LoadAssetAtPath<GameObject>(path).GetComponent<DialogueBlock>();
+        }
+
         private static void WireReferences(GameObject root, GameObject gameSystems, CanvasData canvasData,
-            CardView cardPrefab, UnitView unitPrefab, PartnerCardView partnerCardViewPrefab)
+            CardView cardPrefab, UnitView unitPrefab, PartnerCardView partnerCardViewPrefab, DialogueBlock dialogueBlockPrefab)
         {
             var gameVisualManager = gameSystems.GetComponent<GameVisualManager>();
 
@@ -611,6 +766,21 @@ namespace CardBattle.Editor
                 var vemSo = new SerializedObject(videoEffectManager);
                 vemSo.FindProperty("uiParent").objectReferenceValue = canvasData.CanvasTransform;
                 vemSo.ApplyModifiedPropertiesWithoutUndo();
+            }
+
+            if (canvasData.DialogueLog != null && dialogueBlockPrefab != null)
+            {
+                var dlSo = new SerializedObject(canvasData.DialogueLog);
+                dlSo.FindProperty("blockPrefab").objectReferenceValue = dialogueBlockPrefab;
+                dlSo.ApplyModifiedPropertiesWithoutUndo();
+            }
+
+            var dialogueManager = gameSystems.GetComponent<DialogueManager>();
+            if (dialogueManager != null)
+            {
+                var dmSo = new SerializedObject(dialogueManager);
+                dmSo.FindProperty("dialogueLog").objectReferenceValue = canvasData.DialogueLog;
+                dmSo.ApplyModifiedPropertiesWithoutUndo();
             }
         }
 

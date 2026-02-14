@@ -119,20 +119,12 @@ namespace CardBattle.UI
                 var data = playerManager.GetPlayerData(OwnerPlayerId);
                 if (data != null && data.CurrentMP >= Card.Template.PlayCost)
                 {
-                    if (Card.Template.CardType == CardType.Unit)
+                    ActionQueueManager.Instance?.AddAction(new GameAction
                     {
-                        if (playerManager.TryPlayCard(OwnerPlayerId, Card))
-                            return;
-                    }
-                    else
-                    {
-                        ActionQueueManager.Instance?.AddAction(new GameAction
-                        {
-                            ActionType = ActionType.Play,
-                            SourceCard = Card
-                        });
-                        return;
-                    }
+                        ActionType = ActionType.Play,
+                        SourceCard = Card
+                    });
+                    return;
                 }
             }
 

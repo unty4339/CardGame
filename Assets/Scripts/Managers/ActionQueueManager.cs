@@ -23,10 +23,20 @@ namespace CardBattle.Managers
         private readonly ActionQueue _actionQueue = new();
         private bool _isBusy;
 
+        [SerializeField] private float _aiActionDelaySeconds = 1f;
+        private bool _highSpeedMode;
+        private bool _waitingForAiDelay;
+        private float _aiDelayUntil;
+
         /// <summary>
         /// 現在アクション処理中かどうか。攻撃ドラッグ開始可否の判定に使用する。
         /// </summary>
         public bool IsBusy => _isBusy;
+
+        /// <summary>
+        /// AI行動のディレイを無効化する高速モード。
+        /// </summary>
+        public bool HighSpeedMode { get => _highSpeedMode; set => _highSpeedMode = value; }
 
         /// <summary>
         /// アニメーション再生側が完了時に呼ぶ。次の行動の消化が可能になる。
@@ -55,6 +65,23 @@ namespace CardBattle.Managers
         private void Update()
         {
             if (_isBusy || _actionQueue.IsEmpty()) return;
+
+            var gameFlowManager = GameFlowManager.Instance;
+            var isAiTurn = gameFlowManager != null && gameFlowManager.CurrentTurnPlayerId == 1;
+            var needDelay = isAiTurn && !_highSpeedMode && _aiActionDelaySeconds > 0f;
+
+            if (needDelay)
+            {
+                if (!_waitingForAiDelay)
+                {
+                    _waitingForAiDelay = true;
+                    _aiDelayUntil = Time.time + _aiActionDelaySeconds;
+                    return;
+                }
+                if (Time.time < _aiDelayUntil) return;
+                _waitingForAiDelay = false;
+            }
+
             ProcessNextAction();
         }
 
@@ -100,6 +127,9 @@ namespace CardBattle.Managers
         {
             var gameFlowManager = GameFlowManager.Instance;
             if (gameFlowManager != null)
+                DialogueManager.Instance?.OnTurnEnded(gameFlowManager.CurrentTurnPlayerId);
+            TurnActionLog.Instance?.FinishTurn();
+            if (gameFlowManager != null)
                 gameFlowManager.EndTurn(gameFlowManager.CurrentTurnPlayerId);
             NotifyActionAnimationCompleted();
         }
@@ -138,6 +168,10 @@ namespace CardBattle.Managers
                 {
                     playerManager.TryPlayCard(ownerId, action.SourceCard, () =>
                     {
+                        var turnActionLog = TurnActionLog.Instance;
+                        var gameFlowManager = GameFlowManager.Instance;
+                        if (turnActionLog != null && gameFlowManager != null)
+                            turnActionLog.RecordAction(action, gameFlowManager.CurrentTurnPlayerId);
                         var dialogue = DialogueManager.Instance;
                         dialogue?.OnCardPlayed(action.SourceCard);
                         NotifyActionAnimationCompleted();
@@ -216,6 +250,10 @@ namespace CardBattle.Managers
                     }
                 }
 
+                var turnActionLog = TurnActionLog.Instance;
+                var gameFlowManager = GameFlowManager.Instance;
+                if (turnActionLog != null && gameFlowManager != null)
+                    turnActionLog.RecordAction(action, gameFlowManager.CurrentTurnPlayerId);
                 var dialogueManager = DialogueManager.Instance;
                 dialogueManager?.OnCardPlayed(action.SourceCard);
             }
@@ -246,6 +284,10 @@ namespace CardBattle.Managers
             var playerManager = PlayerManager.Instance;
             ApplySpellResolution(ctx.OwnerId, ctx.OpponentId, ctx.State, ctx.SpellEffect, target,
                 ctx.OpponentUnitsBefore, ctx.MyUnitsBefore);
+            var turnActionLog = TurnActionLog.Instance;
+            var gameFlowManager = GameFlowManager.Instance;
+            if (turnActionLog != null && gameFlowManager != null)
+                turnActionLog.RecordAction(ctx.Action, gameFlowManager.CurrentTurnPlayerId);
             playerManager?.NotifySpellPlayed(ctx.OwnerId, ctx.Action.SourceCard);
             var dialogueManager = DialogueManager.Instance;
             dialogueManager?.OnCardPlayed(ctx.Action.SourceCard);
@@ -324,12 +366,20 @@ namespace CardBattle.Managers
                 gameVisual.PlayAttackAndResolve(attacker, target, () =>
                 {
                     battleManager?.ExecuteAttack(attacker, target);
+                    var turnActionLog = TurnActionLog.Instance;
+                    var gameFlowManager = GameFlowManager.Instance;
+                    if (turnActionLog != null && gameFlowManager != null)
+                        turnActionLog.RecordAction(action, gameFlowManager.CurrentTurnPlayerId);
                     NotifyActionAnimationCompleted();
                 });
             }
             else
             {
                 battleManager?.ExecuteAttack(attacker, target);
+                var turnActionLog = TurnActionLog.Instance;
+                var gameFlowManager = GameFlowManager.Instance;
+                if (turnActionLog != null && gameFlowManager != null)
+                    turnActionLog.RecordAction(action, gameFlowManager.CurrentTurnPlayerId);
                 NotifyActionAnimationCompleted();
             }
         }
