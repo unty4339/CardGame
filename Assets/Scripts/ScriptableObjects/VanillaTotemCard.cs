@@ -8,6 +8,7 @@ namespace CardBattle.ScriptableObjects
         public VanillaTotemCard()
         {
             cardName = "基本のトーテム";
+            description = "基本的なトーテム。場に置いて守りを固める。";
         }
     }
 }

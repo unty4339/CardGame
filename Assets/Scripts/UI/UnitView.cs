@@ -14,7 +14,7 @@ namespace CardBattle.UI
     /// <summary>
     /// フィールドに出た後のキャラクター表示について責任を持つ。攻撃ドラッグ（自分ユニット→相手ユニット/相手プレイヤーゾーン）に対応。
     /// </summary>
-    public class UnitView : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler, IPointerClickHandler
+    public class UnitView : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
     {
         [SerializeField] private Text attackText;
         [SerializeField] private Text hpText;
@@ -64,8 +64,22 @@ namespace CardBattle.UI
             }
         }
 
+        public void OnPointerEnter(PointerEventData eventData)
+        {
+            if (Unit?.SourceCardTemplate == null) return;
+            var desc = Unit.SourceCardTemplate.Description;
+            if (!string.IsNullOrEmpty(desc))
+                CardDescriptionPanel.Instance?.Show(desc);
+        }
+
+        public void OnPointerExit(PointerEventData eventData)
+        {
+            CardDescriptionPanel.Instance?.Hide();
+        }
+
         public void OnBeginDrag(PointerEventData eventData)
         {
+            CardDescriptionPanel.Instance?.Hide();
             if (Unit == null || Unit.OwnerPlayerId != 0) return;
             var controller = AttackDragController.Instance;
             if (controller == null || !controller.TryStartAttackDrag(this)) return;

@@ -13,7 +13,7 @@ namespace CardBattle.UI
     /// <summary>
     /// カード1枚の表示と、マウス操作（ドラッグおよびドロップ）の入力受け付けについて責任を持つ
     /// </summary>
-    public class CardView : MonoBehaviour, IDragHandler, IBeginDragHandler, IEndDragHandler
+    public class CardView : MonoBehaviour, IDragHandler, IBeginDragHandler, IEndDragHandler, IPointerEnterHandler, IPointerExitHandler
     {
         [SerializeField] private Image artwork;
         [SerializeField] private TextMeshProUGUI cost;
@@ -92,8 +92,22 @@ namespace CardBattle.UI
             _hasTargetPosition = true;
         }
 
+        public void OnPointerEnter(PointerEventData eventData)
+        {
+            if (Card?.Template == null) return;
+            var desc = Card.Template.Description;
+            if (!string.IsNullOrEmpty(desc))
+                CardDescriptionPanel.Instance?.Show(desc);
+        }
+
+        public void OnPointerExit(PointerEventData eventData)
+        {
+            CardDescriptionPanel.Instance?.Hide();
+        }
+
         public void OnBeginDrag(PointerEventData eventData)
         {
+            CardDescriptionPanel.Instance?.Hide();
             _isDragging = true;
             if (canvasGroup != null) canvasGroup.blocksRaycasts = false;
         }

@@ -15,6 +15,7 @@ namespace CardBattle.ScriptableObjects
         {
             cardName = "一撃";
             playCost = 1;
+            description = "相手フィールドのユニット1体を選び、1ダメージを与える呪文。";
         }
 
         public IList<EffectTarget> GetAvailableTargets(GameState state)

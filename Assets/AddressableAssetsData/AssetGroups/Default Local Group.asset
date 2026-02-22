@@ -25,8 +25,28 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 5b4b0d1ba7a91a242a22b6deaa570bb7
+    m_Address: "Assets/Images/\u30A4\u30E9\u30B9\u30C870.png"
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 68e4ed8dfcd76ea4cbdc1f7fa21a5607
     m_Address: Assets/Prefabs/AttackVideo.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 92410856f299c1844857917cc798087c
+    m_Address: "Assets/Images/\u30A4\u30E9\u30B9\u30C873.png"
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: d698621c36f116b46a76a9dac6a31525
+    m_Address: "Assets/Images/\u30A4\u30E9\u30B9\u30C871b.png"
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: e8687d8cce6372e4297dc7b6dfd18d29
+    m_Address: "Assets/Images/\u30A4\u30E9\u30B9\u30C871.png"
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0

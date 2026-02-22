@@ -14,6 +14,7 @@ namespace CardBattle.ScriptableObjects
             playCost = 1;
             baseHP = 1;
             baseAttack = 1;
+            description = "何の変哲もない雑兵。特別な能力は持っていない。";
         }
 
         /// <summary>

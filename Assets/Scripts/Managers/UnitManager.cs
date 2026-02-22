@@ -66,7 +66,8 @@ namespace CardBattle.Managers
                 Effects = new System.Collections.Generic.List<Effect>(),
                 PairingTarget = null,
                 OwnerPlayerId = ownerPlayerId,
-                IsPartner = false
+                IsPartner = false,
+                SourceCardTemplate = card.Template
             };
 
             fieldZone.Units.Add(unit);

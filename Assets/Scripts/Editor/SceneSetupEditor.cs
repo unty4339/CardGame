@@ -238,6 +238,10 @@ namespace CardBattle.Editor
 
             var dialogueLog = CreateDialogueLogArea(canvasGo.transform);
 
+            CreateStandingPictureContainer(canvasGo.transform);
+
+            CreateCardDescriptionPanel(canvasGo.transform);
+
             return new CanvasData
             {
                 DeckAnchorPlayer0 = deck0Rect,
@@ -292,6 +296,65 @@ namespace CardBattle.Editor
             so.FindProperty("blockContainer").objectReferenceValue = contentRect;
             so.ApplyModifiedPropertiesWithoutUndo();
             return dialogueLog;
+        }
+
+        private static void CreateStandingPictureContainer(Transform canvasTransform)
+        {
+            var go = new GameObject("StandingPictureContainer");
+            Undo.RegisterCreatedObjectUndo(go, "Create StandingPictureContainer");
+            go.transform.SetParent(canvasTransform, false);
+            var rect = go.AddComponent<RectTransform>();
+            rect.anchorMin = new Vector2(0f, 0f);
+            rect.anchorMax = new Vector2(0f, 1f);
+            rect.pivot = new Vector2(0f, 0.5f);
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = new Vector2(500f, 0f);
+            go.AddComponent<CardBattle.UI.StandingPictureManager>();
+        }
+
+        private static void CreateCardDescriptionPanel(Transform canvasTransform)
+        {
+            var go = new GameObject("CardDescriptionPanel");
+            Undo.RegisterCreatedObjectUndo(go, "Create CardDescriptionPanel");
+            go.transform.SetParent(canvasTransform, false);
+            var rootRect = go.AddComponent<RectTransform>();
+            rootRect.anchorMin = new Vector2(0.7f, 0.2f);
+            rootRect.anchorMax = new Vector2(0.98f, 0.8f);
+            rootRect.offsetMin = new Vector2(10, 10);
+            rootRect.offsetMax = new Vector2(-10, -10);
+
+            var panelRootGo = new GameObject("PanelRoot");
+            panelRootGo.transform.SetParent(go.transform, false);
+            var panelRootRect = panelRootGo.AddComponent<RectTransform>();
+            panelRootRect.anchorMin = Vector2.zero;
+            panelRootRect.anchorMax = Vector2.one;
+            panelRootRect.offsetMin = Vector2.zero;
+            panelRootRect.offsetMax = Vector2.zero;
+            var bgImage = panelRootGo.AddComponent<Image>();
+            bgImage.color = new Color(0.1f, 0.1f, 0.15f, 0.95f);
+            var panelCg = panelRootGo.AddComponent<CanvasGroup>();
+
+            var textGo = new GameObject("DescriptionText");
+            textGo.transform.SetParent(panelRootGo.transform, false);
+            var textRect = textGo.AddComponent<RectTransform>();
+            textRect.anchorMin = Vector2.zero;
+            textRect.anchorMax = Vector2.one;
+            textRect.offsetMin = new Vector2(12, 12);
+            textRect.offsetMax = new Vector2(-12, -12);
+            var tmp = textGo.AddComponent<TextMeshProUGUI>();
+            tmp.text = "";
+            tmp.fontSize = 14;
+            tmp.overflowMode = TMPro.TextOverflowModes.Overflow;
+            tmp.textWrappingMode = TMPro.TextWrappingModes.Normal;
+
+            var panel = go.AddComponent<CardBattle.UI.CardDescriptionPanel>();
+            var so = new SerializedObject(panel);
+            so.FindProperty("panelRoot").objectReferenceValue = panelRootRect;
+            so.FindProperty("descriptionText").objectReferenceValue = tmp;
+            so.FindProperty("canvasGroup").objectReferenceValue = panelCg;
+            so.ApplyModifiedPropertiesWithoutUndo();
+
+            panelRootGo.SetActive(false);
         }
 
         private static RectTransform CreateOpponentPlayerAttackZone(Transform parent)

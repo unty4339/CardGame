@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using CardBattle.Core.Enums;
+using CardBattle.ScriptableObjects;
 
 namespace CardBattle.Core.Field
 {
@@ -33,5 +34,10 @@ namespace CardBattle.Core.Field
         /// オーナープレイヤーID
         /// </summary>
         public int OwnerPlayerId { get; set; }
+
+        /// <summary>
+        /// このユニットの元になったカードのテンプレート。説明文表示などに使用する。
+        /// </summary>
+        public CardTemplate SourceCardTemplate { get; set; }
     }
 }

@@ -17,6 +17,7 @@ namespace CardBattle.ScriptableObjects
             playCost = 1;
             baseHP = 1;
             baseAttack = 1;
+            description = "召喚時、相手フィールドのユニット1体を選び、1ダメージを与える。";
         }
 
         public IList<EffectTarget> GetAvailableTargets(GameState state, Unit sourceUnit)
