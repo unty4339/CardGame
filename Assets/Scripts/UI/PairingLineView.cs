@@ -1,36 +1,35 @@
 using UnityEngine;
-using UnityEngine.UI;
+using Radishmouse;
 
 namespace CardBattle.UI
 {
     /// <summary>
     /// 2点間を結ぶ白線を描画する。ペアリング中のユニットをホバーしたときに表示する。
+    /// UILineRenderer を使用。同一 GameObject に UILineRenderer をアタッチし、RectTransform はフルスクリーンオーバーレイにすること。
     /// </summary>
     public class PairingLineView : MonoBehaviour
     {
-        [SerializeField] private RectTransform lineRect;
-        [SerializeField] private Image lineImage;
+        [SerializeField] private UILineRenderer lineRenderer;
         [SerializeField] private float lineThickness = 2f;
 
         private Transform _from;
         private Transform _to;
         private bool _visible;
-        private RectTransform _rectTransform;
 
         private void Awake()
         {
-            _rectTransform = transform as RectTransform;
-            if (lineRect == null)
-                lineRect = _rectTransform;
-            if (lineImage == null)
-                lineImage = GetComponent<Image>();
-            if (lineImage != null)
-                lineImage.color = new Color(1f, 1f, 1f, 0.9f);
+            if (lineRenderer == null)
+                lineRenderer = GetComponent<UILineRenderer>();
+            if (lineRenderer != null)
+            {
+                lineRenderer.color = new Color(1f, 1f, 1f, 0.9f);
+                lineRenderer.thickness = lineThickness;
+            }
         }
 
         private void LateUpdate()
         {
-            if (!_visible || _from == null || _to == null)
+            if (!_visible || _from == null || _to == null || lineRenderer == null)
                 return;
 
             var canvas = GetComponentInParent<Canvas>();
@@ -45,19 +44,16 @@ namespace CardBattle.UI
                 toPos = canvas.worldCamera.WorldToScreenPoint(toPos);
             }
 
-            var dir = (Vector2)(toPos - fromPos);
-            var length = dir.magnitude;
-            if (length < 0.1f) length = 0.1f;
+            var rect = lineRenderer.rectTransform;
+            Camera cam = canvas.renderMode == RenderMode.ScreenSpaceCamera ? canvas.worldCamera : null;
 
-            var angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
+            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(rect, fromPos, cam, out var localFrom))
+                return;
+            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(rect, toPos, cam, out var localTo))
+                return;
 
-            if (lineRect == null) return;
-            lineRect.pivot = new Vector2(0f, 0.5f);
-            lineRect.anchorMin = new Vector2(0f, 0.5f);
-            lineRect.anchorMax = new Vector2(0f, 0.5f);
-            lineRect.position = fromPos;
-            lineRect.sizeDelta = new Vector2(length, lineThickness);
-            lineRect.rotation = Quaternion.Euler(0f, 0f, angle);
+            lineRenderer.points = new Vector2[] { localFrom, localTo };
+            lineRenderer.SetVerticesDirty();
         }
 
         /// <summary>
@@ -69,8 +65,8 @@ namespace CardBattle.UI
             _to = to;
             _visible = true;
             gameObject.SetActive(true);
-            if (lineImage != null)
-                lineImage.enabled = true;
+            if (lineRenderer != null)
+                lineRenderer.enabled = true;
         }
 
         /// <summary>
@@ -81,9 +77,13 @@ namespace CardBattle.UI
             _visible = false;
             _from = null;
             _to = null;
+            if (lineRenderer != null)
+            {
+                lineRenderer.points = new Vector2[0];
+                lineRenderer.SetVerticesDirty();
+                lineRenderer.enabled = false;
+            }
             gameObject.SetActive(false);
-            if (lineImage != null)
-                lineImage.enabled = false;
         }
     }
 }
