@@ -34,5 +34,23 @@ namespace CardBattle.ScriptableObjects
             if (this is IOnSummonEffect e)
                 yield return e;
         }
+
+        /// <summary>
+        /// ペアリング時に発動する効果。このテンプレートが IOnPairingEffect を実装していればそれを返す。
+        /// </summary>
+        public virtual IEnumerable<IOnPairingEffect> GetOnPairingEffects()
+        {
+            if (this is IOnPairingEffect e)
+                yield return e;
+        }
+
+        /// <summary>
+        /// ペアリング解除時に発動する効果。このテンプレートが IOnUnpairEffect を実装していればそれを返す。
+        /// </summary>
+        public virtual IEnumerable<IOnUnpairEffect> GetOnUnpairEffects()
+        {
+            if (this is IOnUnpairEffect e)
+                yield return e;
+        }
     }
 }

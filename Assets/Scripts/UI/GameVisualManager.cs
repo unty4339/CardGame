@@ -33,6 +33,7 @@ namespace CardBattle.UI
         [SerializeField] private Transform partnerZoneAnchorPlayer0;
         [SerializeField] private Transform partnerZoneAnchorPlayer1;
         [SerializeField] private PartnerCardView partnerCardViewPrefab;
+        [SerializeField] private PairingLineView pairingLineView;
 
         [Header("手札→場 召喚アニメ")]
         [SerializeField] private float handCardPlayOutDuration = 0.3f;
@@ -565,6 +566,33 @@ namespace CardBattle.UI
             var localInParent = uiParent.InverseTransformPoint(worldPos);
             var effectPosition = new Vector2(localInParent.x, localInParent.y);
             VideoEffectManager.Instance?.PlayEffect(_bombVideoPrefab, effectPosition, 2f);
+        }
+
+        /// <summary>
+        /// パートナーカードを効果のターゲットとして選択可能にする（ペアリング対象選択時など）。
+        /// </summary>
+        public void SetPartnerCardSelectableForEffect(bool selectable, int playerId)
+        {
+            var view = playerId == 0 ? _partnerCardViewPlayer0 : _partnerCardViewPlayer1;
+            if (view != null)
+                view.SetSelectableForEffect(selectable);
+        }
+
+        /// <summary>
+        /// ペアリング中の2ユニット間に白線を表示する。ホバー時に UnitView から呼ばれる。
+        /// </summary>
+        public void ShowPairingLine(UnitView from, UnitView to)
+        {
+            if (pairingLineView != null && from != null && to != null)
+                pairingLineView.Show(from.transform, to.transform);
+        }
+
+        /// <summary>
+        /// ペアリング線を非表示にする。
+        /// </summary>
+        public void HidePairingLine()
+        {
+            pairingLineView?.Hide();
         }
     }
 }

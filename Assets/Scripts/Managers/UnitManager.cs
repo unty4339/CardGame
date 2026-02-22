@@ -7,6 +7,7 @@ using CardBattle.Core.Deck;
 using CardBattle.Core.Effects;
 using CardBattle.Core.Enums;
 using CardBattle.Core.Field;
+using CardBattle.Core.Player;
 using CardBattle.ScriptableObjects;
 using CardBattle.UI;
 using UnityEngine;
@@ -65,6 +66,7 @@ namespace CardBattle.Managers
                 Keywords = new System.Collections.Generic.List<KeywordAbility>(keywords),
                 Effects = new System.Collections.Generic.List<Effect>(),
                 PairingTarget = null,
+                PairingWithPartnerCard = false,
                 OwnerPlayerId = ownerPlayerId,
                 IsPartner = false,
                 SourceCardTemplate = card.Template
@@ -130,23 +132,104 @@ namespace CardBattle.Managers
                         foreach (var u in opponentUnitsBefore)
                         {
                             if (!state.OpponentField.Units.Any(x => x.InstanceId == u.InstanceId))
-                                playerManager.NotifyUnitDestroyed(u);
+                                playerManager.UnpairIfNeededAndNotifyDestroyed(u);
                         }
                         foreach (var u in myUnitsBefore)
                         {
                             if (!state.MyField.Units.Any(x => x.InstanceId == u.InstanceId))
-                                playerManager.NotifyUnitDestroyed(u);
+                                playerManager.UnpairIfNeededAndNotifyDestroyed(u);
                         }
-                        onEffectsResolved?.Invoke(unit);
+
+                        TryResolvePairingSync(unit, unitBase, ownerPlayerId, opponentId, myData, oppData, state, onEffectsResolved);
                     }
                 }
             }
             else
             {
+                var unitBaseFallback = unit?.SourceCardTemplate as UnitCardTemplateBase;
+                if (unit != null && unitBaseFallback != null)
+                {
+                    var playerManager = PlayerManager.Instance;
+                    var myData = playerManager?.GetPlayerData(ownerPlayerId);
+                    var oppData = playerManager?.GetPlayerData(ownerPlayerId == 0 ? 1 : 0);
+                    if (myData != null && oppData != null)
+                    {
+                        var state = new GameState
+                        {
+                            MyPlayerId = ownerPlayerId,
+                            OpponentPlayerId = ownerPlayerId == 0 ? 1 : 0,
+                            MyField = myData.FieldZone,
+                            OpponentField = oppData.FieldZone,
+                            MyHand = new List<Card>(myData.Hand.Cards),
+                            MyHP = myData.HP,
+                            OpponentHP = oppData.HP,
+                            MyMP = myData.CurrentMP,
+                            OpponentMP = oppData.CurrentMP
+                        };
+                        TryResolvePairingSync(unit, unitBaseFallback, ownerPlayerId, ownerPlayerId == 0 ? 1 : 0, myData, oppData, state, onEffectsResolved);
+                        return unit;
+                    }
+                }
                 onEffectsResolved?.Invoke(unit);
             }
 
             return unit;
+        }
+
+        private static void TryResolvePairingSync(
+            Unit unit,
+            UnitCardTemplateBase unitBase,
+            int ownerPlayerId,
+            int opponentId,
+            PlayerData myData,
+            PlayerData oppData,
+            GameState state,
+            Action<Unit> onEffectsResolved)
+        {
+            var onPairingEffects = unitBase.GetOnPairingEffects()?.ToList();
+            if (onPairingEffects == null || onPairingEffects.Count == 0)
+            {
+                onEffectsResolved?.Invoke(unit);
+                return;
+            }
+
+            var isPartnerOnField = myData.PartnerZone?.IsPartnerOnField ?? false;
+            var choices = onPairingEffects[0].GetAvailableTargets(state, unit, isPartnerOnField);
+            if (choices == null || choices.Count == 0)
+            {
+                onEffectsResolved?.Invoke(unit);
+                return;
+            }
+
+            var resolver = EffectResolver.Instance;
+            var needTargetSelection = resolver != null && ownerPlayerId == 0 && choices.Count > 1;
+            EffectTarget target;
+            if (needTargetSelection)
+                target = resolver.RequestTargetAsync(choices, ownerPlayerId).GetAwaiter().GetResult();
+            else
+                target = choices[0];
+
+            Unit pairTargetUnit = null;
+            if (target.Kind == EffectTargetKind.Unit && target.UnitInstanceId != null)
+            {
+                var b = myData.FieldZone.Units.Find(u => u.InstanceId == target.UnitInstanceId.Value)
+                    ?? oppData.FieldZone.Units.Find(u => u.InstanceId == target.UnitInstanceId.Value);
+                if (b != null)
+                {
+                    unit.PairingTarget = b;
+                    b.PairingTarget = unit;
+                    pairTargetUnit = b;
+                }
+            }
+            else if (target.Kind == EffectTargetKind.PartnerCard)
+            {
+                unit.PairingWithPartnerCard = true;
+            }
+
+            foreach (var effect in onPairingEffects)
+                effect.Resolve(target, state, unit, pairTargetUnit);
+
+            onEffectsResolved?.Invoke(unit);
         }
 
         private IEnumerator ResolveSummonEffectsCoroutine(
@@ -201,13 +284,90 @@ namespace CardBattle.Managers
             foreach (var u in opponentUnitsBefore)
             {
                 if (!state.OpponentField.Units.Any(x => x.InstanceId == u.InstanceId))
-                    playerManager.NotifyUnitDestroyed(u);
+                    playerManager.UnpairIfNeededAndNotifyDestroyed(u);
             }
             foreach (var u in myUnitsBefore)
             {
                 if (!state.MyField.Units.Any(x => x.InstanceId == u.InstanceId))
-                    playerManager.NotifyUnitDestroyed(u);
+                    playerManager.UnpairIfNeededAndNotifyDestroyed(u);
             }
+
+            var unitBase = unit.SourceCardTemplate as UnitCardTemplateBase;
+            if (unitBase != null)
+            {
+                yield return ResolvePairingCoroutine(unit, unitBase, ownerPlayerId, opponentId, state, playerManager, onEffectsResolved);
+                yield break;
+            }
+
+            onEffectsResolved?.Invoke(unit);
+        }
+
+        private IEnumerator ResolvePairingCoroutine(
+            Unit unit,
+            UnitCardTemplateBase unitBase,
+            int ownerPlayerId,
+            int opponentId,
+            GameState state,
+            PlayerManager playerManager,
+            Action<Unit> onEffectsResolved)
+        {
+            var onPairingEffects = unitBase.GetOnPairingEffects()?.ToList();
+            if (onPairingEffects == null || onPairingEffects.Count == 0)
+            {
+                onEffectsResolved?.Invoke(unit);
+                yield break;
+            }
+
+            var myData = playerManager.GetPlayerData(ownerPlayerId);
+            var oppData = playerManager.GetPlayerData(opponentId);
+            if (myData == null || oppData == null)
+            {
+                onEffectsResolved?.Invoke(unit);
+                yield break;
+            }
+
+            var isPartnerOnField = myData.PartnerZone?.IsPartnerOnField ?? false;
+            var choices = onPairingEffects[0].GetAvailableTargets(state, unit, isPartnerOnField);
+            if (choices == null || choices.Count == 0)
+            {
+                onEffectsResolved?.Invoke(unit);
+                yield break;
+            }
+
+            var resolver = EffectResolver.Instance;
+            var needTargetSelection = resolver != null && ownerPlayerId == 0 && choices.Count > 1;
+            EffectTarget target;
+            if (needTargetSelection)
+            {
+                var task = resolver.RequestTargetAsync(choices, ownerPlayerId);
+                while (!task.IsCompleted)
+                    yield return null;
+                target = task.GetAwaiter().GetResult();
+            }
+            else
+            {
+                target = choices[0];
+            }
+
+            Unit pairTargetUnit = null;
+            if (target.Kind == EffectTargetKind.Unit && target.UnitInstanceId != null)
+            {
+                var b = myData.FieldZone.Units.Find(u => u.InstanceId == target.UnitInstanceId.Value)
+                    ?? oppData.FieldZone.Units.Find(u => u.InstanceId == target.UnitInstanceId.Value);
+                if (b != null)
+                {
+                    unit.PairingTarget = b;
+                    b.PairingTarget = unit;
+                    pairTargetUnit = b;
+                }
+            }
+            else if (target.Kind == EffectTargetKind.PartnerCard)
+            {
+                unit.PairingWithPartnerCard = true;
+            }
+
+            foreach (var effect in onPairingEffects)
+                effect.Resolve(target, state, unit, pairTargetUnit);
 
             onEffectsResolved?.Invoke(unit);
         }

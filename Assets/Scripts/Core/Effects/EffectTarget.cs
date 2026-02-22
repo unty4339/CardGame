@@ -30,5 +30,13 @@ namespace CardBattle.Core.Effects
         {
             return new EffectTarget(EffectTargetKind.Player, null, playerId);
         }
+
+        /// <summary>
+        /// ペアリング対象としてパートナーカードを指定する。ownerPlayerId はそのパートナーを所有するプレイヤーID。
+        /// </summary>
+        public static EffectTarget PartnerCard(int ownerPlayerId)
+        {
+            return new EffectTarget(EffectTargetKind.PartnerCard, null, ownerPlayerId);
+        }
     }
 }

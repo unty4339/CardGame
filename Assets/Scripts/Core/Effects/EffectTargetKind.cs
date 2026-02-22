@@ -7,6 +7,8 @@ namespace CardBattle.Core.Effects
     {
         None,
         Unit,
-        Player
+        Player,
+        /// <summary>ペアリング対象としてのパートナーカード（ユニットとしてまだ場に出ていない状態）</summary>
+        PartnerCard
     }
 }

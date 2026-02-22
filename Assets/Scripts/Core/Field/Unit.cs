@@ -26,6 +26,12 @@ namespace CardBattle.Core.Field
         public Unit PairingTarget { get; set; }
 
         /// <summary>
+        /// ペア対象が「パートナーカード」（ユニットとしてまだ場に出ていない状態）のとき true。
+        /// この間は肩代わりは発動しない。
+        /// </summary>
+        public bool PairingWithPartnerCard { get; set; }
+
+        /// <summary>
         /// パートナーであるかどうか
         /// </summary>
         public bool IsPartner { get; set; }

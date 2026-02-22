@@ -1,3 +1,5 @@
+using CardBattle.Core.Effects;
+using CardBattle.Core.Enums;
 using CardBattle.Core.Partner;
 using CardBattle.Managers;
 using UnityEngine;
@@ -9,7 +11,7 @@ namespace CardBattle.UI
     /// <summary>
     /// パートナーカード1枚の表示と、フィールドへのドラッグドロップによる召喚入力について責任を持つ
     /// </summary>
-    public class PartnerCardView : MonoBehaviour, IDragHandler, IBeginDragHandler, IEndDragHandler
+    public class PartnerCardView : MonoBehaviour, IDragHandler, IBeginDragHandler, IEndDragHandler, IPointerClickHandler
     {
         [SerializeField] private Image artwork;
         [SerializeField] private Text cost;
@@ -26,6 +28,7 @@ namespace CardBattle.UI
 
         private bool _isDragging;
         private bool _draggable = true;
+        private bool _selectableForEffect;
 
         private void Awake()
         {
@@ -63,6 +66,22 @@ namespace CardBattle.UI
             _draggable = draggable;
             if (canvasGroup != null)
                 canvasGroup.alpha = draggable ? 1f : 0.5f;
+        }
+
+        /// <summary>
+        /// 効果のターゲットとしてパートナーカードを選択可能にする（ペアリング対象選択時など）
+        /// </summary>
+        public void SetSelectableForEffect(bool selectable)
+        {
+            _selectableForEffect = selectable;
+        }
+
+        public void OnPointerClick(PointerEventData eventData)
+        {
+            if (!_selectableForEffect || Partner == null) return;
+            var gameFlow = GameFlowManager.Instance;
+            if (gameFlow == null || gameFlow.CurrentPhase != GamePhase.TargetSelection) return;
+            EffectResolver.Instance?.ConfirmTarget(EffectTarget.PartnerCard(OwnerPlayerId));
         }
 
         public void OnBeginDrag(PointerEventData eventData)

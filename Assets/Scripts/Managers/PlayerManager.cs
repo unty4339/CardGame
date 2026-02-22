@@ -1,10 +1,14 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using CardBattle.AI;
 using CardBattle.Core;
 using CardBattle.Core.Deck;
+using CardBattle.Core.Effects;
 using CardBattle.Core.Enums;
 using CardBattle.Core.Field;
 using CardBattle.Core.Player;
+using CardBattle.ScriptableObjects;
 using UnityEngine;
 
 namespace CardBattle.Managers
@@ -74,13 +78,84 @@ namespace CardBattle.Managers
         }
 
         /// <summary>
-        /// ユニット破壊を通知する（攻撃解決などで呼ぶ）
+        /// ユニット破壊を通知する（攻撃解決などで呼ぶ）。ペアリング解除は UnpairIfNeededAndNotifyDestroyed で行うこと。
         /// </summary>
         public void NotifyUnitDestroyed(Unit unit)
         {
             OnUnitDestroyed?.Invoke(unit);
             if (unit != null && unit.IsPartner)
                 PartnerManager.Instance?.ReturnPartnerToZone(unit, unit.OwnerPlayerId);
+        }
+
+        /// <summary>
+        /// ユニットが場を離れる前にペアリング解除（OnUnpair 発動・参照クリア）を行い、続けて破壊通知する。
+        /// 呼び出し元はこのメソッドの後に Units.Remove(unit) を行うこと。
+        /// </summary>
+        public void UnpairIfNeededAndNotifyDestroyed(Unit unit)
+        {
+            if (unit == null)
+            {
+                NotifyUnitDestroyed(unit);
+                return;
+            }
+
+            if (unit.PairingWithPartnerCard)
+            {
+                var state = BuildGameStateForPlayer(unit.OwnerPlayerId);
+                var template = unit.SourceCardTemplate as UnitCardTemplateBase;
+                if (template != null)
+                {
+                    foreach (var effect in template.GetOnUnpairEffects())
+                        effect.Resolve(unit, state, unit);
+                }
+                unit.PairingWithPartnerCard = false;
+            }
+            else if (unit.PairingTarget != null)
+            {
+                var partner = unit.PairingTarget;
+                var state = BuildGameStateForPlayer(unit.OwnerPlayerId);
+
+                var partnerTemplate = partner.SourceCardTemplate as UnitCardTemplateBase;
+                if (partnerTemplate != null)
+                {
+                    foreach (var effect in partnerTemplate.GetOnUnpairEffects())
+                        effect.Resolve(unit, state, partner);
+                }
+
+                var myTemplate = unit.SourceCardTemplate as UnitCardTemplateBase;
+                if (myTemplate != null)
+                {
+                    foreach (var effect in myTemplate.GetOnUnpairEffects())
+                        effect.Resolve(unit, state, unit);
+                }
+
+                unit.PairingTarget = null;
+                partner.PairingTarget = null;
+            }
+
+            NotifyUnitDestroyed(unit);
+        }
+
+        private GameState BuildGameStateForPlayer(int myPlayerId)
+        {
+            var myData = GetPlayerData(myPlayerId);
+            var oppId = myPlayerId == 0 ? 1 : 0;
+            var oppData = GetPlayerData(oppId);
+            if (myData == null || oppData == null)
+                return new GameState();
+
+            return new GameState
+            {
+                MyPlayerId = myPlayerId,
+                OpponentPlayerId = oppId,
+                MyHand = new List<Card>(myData.Hand.Cards),
+                MyField = myData.FieldZone,
+                OpponentField = oppData.FieldZone,
+                MyHP = myData.HP,
+                OpponentHP = oppData.HP,
+                MyMP = myData.CurrentMP,
+                OpponentMP = oppData.CurrentMP
+            };
         }
 
         private void Awake()

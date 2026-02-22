@@ -320,7 +320,7 @@ namespace CardBattle.Managers
             foreach (var u in opponentUnitsBefore)
             {
                 if (!state.OpponentField.Units.Any(x => x.InstanceId == u.InstanceId))
-                    playerManager.NotifyUnitDestroyed(u);
+                    playerManager.UnpairIfNeededAndNotifyDestroyed(u);
             }
             if (target.Kind == EffectTargetKind.Unit && target.UnitInstanceId != null)
             {
@@ -331,7 +331,7 @@ namespace CardBattle.Managers
             foreach (var u in myUnitsBefore)
             {
                 if (!state.MyField.Units.Any(x => x.InstanceId == u.InstanceId))
-                    playerManager.NotifyUnitDestroyed(u);
+                    playerManager.UnpairIfNeededAndNotifyDestroyed(u);
             }
         }
 

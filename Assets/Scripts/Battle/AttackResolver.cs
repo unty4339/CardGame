@@ -1,7 +1,9 @@
 using System;
+using CardBattle.Core.Effects;
 using CardBattle.Core.Enums;
 using CardBattle.Core.Field;
 using CardBattle.Managers;
+using CardBattle.ScriptableObjects;
 
 namespace CardBattle.Battle
 {
@@ -11,27 +13,43 @@ namespace CardBattle.Battle
     public class AttackResolver
     {
         /// <summary>
-        /// 攻撃側ユニットと防御側ユニットを受け取り、双方の体力を減らし破壊判定を行う
-        /// パートナーが破壊された場合はパートナーゾーンに戻す処理を行う
+        /// 攻撃側ユニットと防御側ユニットを受け取り、双方の体力を減らし破壊判定を行う。
+        /// 肩代わり: defender が IWhilePairedSubstitution を持ち、PairingTarget がフィールド上のユニットのとき、ダメージ先を PairingTarget に振り替える。
+        /// パートナーが破壊された場合はパートナーゾーンに戻す処理を行う。
         /// </summary>
         public void ResolveUnitAttack(Unit attacker, Unit defender, FieldZone attackerField, FieldZone defenderField)
         {
-            defender.HP -= attacker.Attack;
+            var playerManager = PlayerManager.Instance;
+
+            Unit damageReceiver;
+            if (defender.SourceCardTemplate is IWhilePairedSubstitution
+                && defender.PairingTarget != null
+                && !defender.PairingWithPartnerCard)
+            {
+                damageReceiver = defender.PairingTarget;
+            }
+            else
+            {
+                damageReceiver = defender;
+            }
+
+            damageReceiver.HP -= attacker.Attack;
             attacker.HP -= defender.Attack;
 
-            var playerManager = PlayerManager.Instance;
             playerManager?.NotifyUnitHpChanged(attacker);
-            playerManager?.NotifyUnitHpChanged(defender);
+            playerManager?.NotifyUnitHpChanged(damageReceiver);
+            if (damageReceiver != defender)
+                playerManager?.NotifyUnitHpChanged(defender);
 
-            if (defender.HP <= 0)
+            if (damageReceiver.HP <= 0)
             {
-                playerManager?.NotifyUnitDestroyed(defender);
-                defenderField.Units.Remove(defender);
+                playerManager?.UnpairIfNeededAndNotifyDestroyed(damageReceiver);
+                defenderField.Units.Remove(damageReceiver);
             }
 
             if (attacker.HP <= 0)
             {
-                playerManager?.NotifyUnitDestroyed(attacker);
+                playerManager?.UnpairIfNeededAndNotifyDestroyed(attacker);
                 attackerField.Units.Remove(attacker);
             }
         }

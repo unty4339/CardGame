@@ -84,12 +84,24 @@ namespace CardBattle.Managers
                 Keywords = new System.Collections.Generic.List<Core.Enums.KeywordAbility>(partner.Keywords),
                 Effects = new System.Collections.Generic.List<Effect>(),
                 PairingTarget = null,
+                PairingWithPartnerCard = false,
                 OwnerPlayerId = playerId,
                 IsPartner = true
             };
 
             data.FieldZone.Units.Add(unit);
             data.PartnerZone.IsPartnerOnField = true;
+
+            foreach (var u in data.FieldZone.Units)
+            {
+                if (u != unit && u.PairingWithPartnerCard)
+                {
+                    u.PairingTarget = unit;
+                    unit.PairingTarget = u;
+                    u.PairingWithPartnerCard = false;
+                    break;
+                }
+            }
 
             OnPartnerSummoned?.Invoke(playerId, unit);
             return true;

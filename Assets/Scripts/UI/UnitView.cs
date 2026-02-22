@@ -66,6 +66,13 @@ namespace CardBattle.UI
 
         public void OnPointerEnter(PointerEventData eventData)
         {
+            if (Unit != null && Unit.PairingTarget != null)
+            {
+                var gvm = GameVisualManager.Instance;
+                var otherView = gvm?.GetUnitViewByInstanceId(Unit.PairingTarget.OwnerPlayerId, Unit.PairingTarget.InstanceId);
+                if (otherView != null)
+                    gvm?.ShowPairingLine(this, otherView);
+            }
             if (Unit?.SourceCardTemplate == null) return;
             var desc = Unit.SourceCardTemplate.Description;
             if (!string.IsNullOrEmpty(desc))
@@ -74,6 +81,7 @@ namespace CardBattle.UI
 
         public void OnPointerExit(PointerEventData eventData)
         {
+            GameVisualManager.Instance?.HidePairingLine();
             CardDescriptionPanel.Instance?.Hide();
         }
 

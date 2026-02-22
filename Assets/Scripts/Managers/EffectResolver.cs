@@ -73,12 +73,19 @@ namespace CardBattle.Managers
 
                 foreach (var choice in choices)
                 {
-                    if (choice.Kind != EffectTargetKind.Unit || choice.UnitInstanceId == null) continue;
-                    var view = gvm.GetUnitViewByInstanceId(opponentId, choice.UnitInstanceId.Value);
-                    if (view != null)
+                    if (choice.Kind == EffectTargetKind.Unit && choice.UnitInstanceId != null)
                     {
-                        view.SetHighlight(true);
-                        view.SetSelectableForEffect(true);
+                        var view = gvm.GetUnitViewByInstanceId(actingPlayerId, choice.UnitInstanceId.Value)
+                            ?? gvm.GetUnitViewByInstanceId(opponentId, choice.UnitInstanceId.Value);
+                        if (view != null)
+                        {
+                            view.SetHighlight(true);
+                            view.SetSelectableForEffect(true);
+                        }
+                    }
+                    else if (choice.Kind == EffectTargetKind.PartnerCard && choice.PlayerId == actingPlayerId)
+                    {
+                        gvm.SetPartnerCardSelectableForEffect(true, actingPlayerId);
                     }
                 }
 
@@ -163,6 +170,7 @@ namespace CardBattle.Managers
                     view.SetGrayedOut(false);
                     view.SetSelectableForEffect(false);
                 }
+                gvm.SetPartnerCardSelectableForEffect(false, p);
             }
         }
     }
