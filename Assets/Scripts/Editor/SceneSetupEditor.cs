@@ -272,17 +272,20 @@ namespace CardBattle.Editor
             var contentGo = new GameObject("Content");
             contentGo.transform.SetParent(areaGo.transform, false);
             var contentRect = contentGo.AddComponent<RectTransform>();
-            contentRect.anchorMin = Vector2.zero;
-            contentRect.anchorMax = Vector2.one;
+            contentRect.anchorMin = new Vector2(0, 0);
+            contentRect.anchorMax = new Vector2(1, 0);
             contentRect.offsetMin = Vector2.zero;
             contentRect.offsetMax = Vector2.zero;
+            contentRect.pivot = new Vector2(0.5f, 0f);
             var vlg = contentGo.AddComponent<VerticalLayoutGroup>();
             vlg.childAlignment = TextAnchor.LowerCenter;
             vlg.childControlWidth = true;
             vlg.childControlHeight = false;
             vlg.childForceExpandWidth = true;
             vlg.childForceExpandHeight = false;
-            vlg.spacing = 6;
+            vlg.spacing = 0;
+            var csf = contentGo.AddComponent<ContentSizeFitter>();
+            csf.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
             var dialogueLog = areaGo.AddComponent<DialogueLog>();
             var so = new SerializedObject(dialogueLog);
