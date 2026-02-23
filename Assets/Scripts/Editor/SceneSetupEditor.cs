@@ -125,10 +125,10 @@ namespace CardBattle.Editor
             var partnerZone0Go = new GameObject("PartnerZoneAnchorPlayer0");
             partnerZone0Go.transform.SetParent(canvasGo.transform, false);
             var partnerZone0Rect = partnerZone0Go.AddComponent<RectTransform>();
-            partnerZone0Rect.anchorMin = new Vector2(0.02f, 0.1f);
-            partnerZone0Rect.anchorMax = new Vector2(0.08f, 0.3f);
-            partnerZone0Rect.offsetMin = Vector2.zero;
-            partnerZone0Rect.offsetMax = Vector2.zero;
+            partnerZone0Rect.anchorMin = new Vector2(0.5f, 0.5f);
+            partnerZone0Rect.anchorMax = new Vector2(0.5f, 0.5f);
+            partnerZone0Rect.anchoredPosition = new Vector2(262.4f, -207.3f);
+            partnerZone0Rect.sizeDelta = new Vector2(48f, 90f);
 
             var partnerZone1Go = new GameObject("PartnerZoneAnchorPlayer1");
             partnerZone1Go.transform.SetParent(canvasGo.transform, false);
@@ -203,7 +203,7 @@ namespace CardBattle.Editor
                 if (rect0 != null)
                 {
                     rect0.anchorMin = new Vector2(0, 0f);
-                    rect0.anchorMax = new Vector2(0.25f, 0.15f);
+                    rect0.anchorMax = new Vector2(0.2f, 0.15f);
                     rect0.offsetMin = new Vector2(0, 0);
                     rect0.offsetMax = new Vector2(0, 0);
                 }
@@ -308,8 +308,9 @@ namespace CardBattle.Editor
             rect.anchorMax = new Vector2(0f, 1f);
             rect.pivot = new Vector2(0f, 0.5f);
             rect.offsetMin = Vector2.zero;
-            rect.offsetMax = new Vector2(500f, 0f);
+            rect.offsetMax = new Vector2(300f, 0f);
             go.AddComponent<CardBattle.UI.StandingPictureManager>();
+            go.transform.SetSiblingIndex(0); // 最前面に配置
         }
 
         private static void CreateCardDescriptionPanel(Transform canvasTransform)
@@ -342,6 +343,9 @@ namespace CardBattle.Editor
             textRect.offsetMin = new Vector2(12, 12);
             textRect.offsetMax = new Vector2(-12, -12);
             var tmp = textGo.AddComponent<TextMeshProUGUI>();
+            var fontAsset = AssetDatabase.LoadAssetAtPath<TMPro.TMP_FontAsset>("Assets/Fonts/NotoSansJP-Medium SDF.asset");
+            if (fontAsset != null)
+                tmp.font = fontAsset;
             tmp.text = "";
             tmp.fontSize = 14;
             tmp.overflowMode = TMPro.TextOverflowModes.Overflow;

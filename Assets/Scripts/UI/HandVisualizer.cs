@@ -11,6 +11,8 @@ namespace CardBattle.UI
     {
         [SerializeField] private float arcAngle = 20f;
         [SerializeField] private float spacing = 150f;
+        [Tooltip("この枚数まではアーチを横に広げる。超えた分は同じ幅で間隔を詰める")]
+        private int maxCardsForFullSpread = 5;
         public bool isOpponent;
         private float handBaseY = -50f;
 
@@ -39,7 +41,8 @@ namespace CardBattle.UI
             var halfArc = arcAngle * 0.5f * Mathf.Deg2Rad;
             var t = totalCount > 1 ? (float)index / (totalCount - 1) : 0f;
             var angle = Mathf.PI + Mathf.Lerp(-halfArc, halfArc, t);
-            var radius = spacing * Mathf.Max(1, totalCount) * 1.2f;
+            var countForRadius = Mathf.Min(totalCount, maxCardsForFullSpread);
+            var radius = spacing * Mathf.Max(1, countForRadius) * 1.2f;
             var x = radius * Mathf.Sin(angle);
             var y = handBaseY + radius * (-Mathf.Cos(angle) - 1f);
             return new Vector3(x, y, 0f);
@@ -103,6 +106,8 @@ namespace CardBattle.UI
             {
                 var targetPos = CalculatePosition(i, count);
                 _activeCards[i].SetTargetPosition(targetPos);
+                // 右側のカードほど手前に描画する（この環境では Sibling Index が小さいほど手前）
+                _activeCards[i].transform.SetSiblingIndex(count - 1 - i);
             }
         }
     }

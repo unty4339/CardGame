@@ -9,6 +9,7 @@ using CardBattle.Core.Enums;
 using CardBattle.Core.Field;
 using CardBattle.Core.Player;
 using CardBattle.ScriptableObjects;
+using CardBattle.UI;
 using UnityEngine;
 
 namespace CardBattle.Managers
@@ -99,6 +100,10 @@ namespace CardBattle.Managers
                 return;
             }
 
+            var needPartnerSweating = (unit.IsPartner && unit.OwnerPlayerId == 0)
+                || (unit.PairingTarget != null && unit.PairingTarget.IsPartner && unit.PairingTarget.OwnerPlayerId == 0)
+                || (unit.PairingWithPartnerCard && unit.OwnerPlayerId == 0);
+
             if (unit.PairingWithPartnerCard)
             {
                 var state = BuildGameStateForPlayer(unit.OwnerPlayerId);
@@ -132,6 +137,9 @@ namespace CardBattle.Managers
                 unit.PairingTarget = null;
                 partner.PairingTarget = null;
             }
+
+            if (needPartnerSweating)
+                StandingPictureManager.Instance?.SetStandingPicture(StandingPictureType.Sweating);
 
             NotifyUnitDestroyed(unit);
         }
@@ -199,6 +207,20 @@ namespace CardBattle.Managers
         }
 
         /// <summary>
+        /// 指定テンプレートのカードを1枚生成して手札に加える。効果で「〇〇を手札に加える」を行うときに使用する。
+        /// </summary>
+        public bool AddCardToHand(int playerId, CardTemplate template)
+        {
+            var data = GetPlayerData(playerId);
+            if (data == null || template == null) return false;
+            var card = DeckBuilder.CreateCardFromTemplate(template);
+            data.Hand.Cards.Add(card);
+            OnCardDrawn?.Invoke(playerId, card);
+            NotifyPlayerDataChanged(playerId);
+            return true;
+        }
+
+        /// <summary>
         /// プレイヤーIDを受け取り、デッキの一番上からカードを手札に加える
         /// </summary>
         public bool DrawCard(int playerId)
@@ -238,7 +260,17 @@ namespace CardBattle.Managers
             void OnEffectsResolved(Unit unit)
             {
                 if (unit != null)
+                {
+                    // このターンに召喚したユニットに攻撃権を付与（速攻・神速で即攻撃可能にする）
+                    var gfm = GameFlowManager.Instance;
+                    if (gfm != null && playerId == gfm.CurrentTurnPlayerId)
+                    {
+                        var ownerData = GetPlayerData(playerId);
+                        if (ownerData != null && ownerData.FieldZone.Units.Contains(unit))
+                            unit.CanAttack = true;
+                    }
                     OnUnitSummoned?.Invoke(playerId, card, unit);
+                }
                 onPlayComplete?.Invoke();
             }
 

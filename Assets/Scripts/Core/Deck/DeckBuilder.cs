@@ -44,6 +44,20 @@ namespace CardBattle.Core.Deck
         }
 
         /// <summary>
+        /// 指定テンプレートから手札用のカードインスタンスを1枚生成する。手札追加効果などで使用する。
+        /// </summary>
+        public static Card CreateCardFromTemplate(CardTemplate template)
+        {
+            if (template == null)
+                throw new ArgumentNullException(nameof(template));
+            return new Card
+            {
+                CardID = _nextCardId++,
+                Template = template
+            };
+        }
+
+        /// <summary>
         /// デッキの順序をランダムに並べ替える
         /// </summary>
         public static void Shuffle(List<Card> cards)

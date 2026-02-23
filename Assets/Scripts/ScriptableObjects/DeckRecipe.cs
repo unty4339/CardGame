@@ -18,15 +18,36 @@ namespace CardBattle.ScriptableObjects
         public PartnerTemplate PartnerTemplate => partnerTemplate;
 
         /// <summary>
-        /// 指定プレイヤー用のデッキレシピを動的に作成する。VanillaUnitCard / DealOneDamageSpellCard / DealOneDamageUnitCard を各10枚ずつ（合計30枚）含む。
+        /// 指定プレイヤー用のデッキレシピを動的に作成する。
+        /// playerId==0（自分）: パートナー以外の追加カードを各3枚ずつ（合計27枚）。
+        /// playerId==1（相手）: VanillaUnitCard / DealOneDamageSpellCard / DealOneDamageUnitCard を各10枚ずつ（合計30枚）。
         /// </summary>
         public static DeckRecipe CreateForPlayer(int playerId)
         {
             var deckRecipe = ScriptableObject.CreateInstance<DeckRecipe>();
             var entriesList = GetPrivateField<List<DeckRecipeEntry>>(deckRecipe, "entries");
-            entriesList.Add(new DeckRecipeEntry { Template = new VanillaUnitCard(), Count = 10 });
-            entriesList.Add(new DeckRecipeEntry { Template = new DealOneDamageSpellCard(), Count = 10 });
-            entriesList.Add(new DeckRecipeEntry { Template = new DealOneDamageUnitCard(), Count = 10 });
+
+            if (playerId == 0)
+            {
+                // 自分のデッキ: パートナー（未来航路の番人、クーリア）以外の追加カードを3枚ずつ
+                const int copies = 3;
+                entriesList.Add(new DeckRecipeEntry { Template = new GoblinUnitCard(), Count = copies });
+                entriesList.Add(new DeckRecipeEntry { Template = new GoblinSpearmanUnitCard(), Count = copies });
+                entriesList.Add(new DeckRecipeEntry { Template = new GoblinCavalryUnitCard(), Count = copies });
+                entriesList.Add(new DeckRecipeEntry { Template = new GoblinCommanderUnitCard(), Count = copies });
+                entriesList.Add(new DeckRecipeEntry { Template = new ForestBarbarianOgreUnitCard(), Count = copies });
+                entriesList.Add(new DeckRecipeEntry { Template = new FleshArmorOgreUnitCard(), Count = copies });
+                entriesList.Add(new DeckRecipeEntry { Template = new GreenLightHeraldUnitCard(), Count = copies });
+                entriesList.Add(new DeckRecipeEntry { Template = new GrimskinWhistleSpellCard(), Count = copies });
+                entriesList.Add(new DeckRecipeEntry { Template = new GrimskinNurseryTotemCard(), Count = copies });
+            }
+            else
+            {
+                // 相手のデッキ: 変更不要（従来どおり）
+                entriesList.Add(new DeckRecipeEntry { Template = new VanillaUnitCard(), Count = 10 });
+                entriesList.Add(new DeckRecipeEntry { Template = new DealOneDamageSpellCard(), Count = 10 });
+                entriesList.Add(new DeckRecipeEntry { Template = new DealOneDamageUnitCard(), Count = 10 });
+            }
 
             return deckRecipe;
         }

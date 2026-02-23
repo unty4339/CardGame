@@ -5,6 +5,7 @@ using CardBattle.Core.Enums;
 using CardBattle.Core.Partner;
 using CardBattle.Core.Player;
 using CardBattle.ScriptableObjects;
+using CardBattle.UI;
 using UnityEngine;
 
 namespace CardBattle.Managers
@@ -133,6 +134,7 @@ namespace CardBattle.Managers
         public void StartGame()
         {
             InitializeBattle();
+            StandingPictureManager.Instance?.SetStandingPicture(StandingPictureType.Normal);
             StartTurn(_firstPlayer);
         }
 

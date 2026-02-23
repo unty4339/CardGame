@@ -154,10 +154,11 @@ namespace CardBattle.Managers
                     var oppData = playerManager?.GetPlayerData(ownerPlayerId == 0 ? 1 : 0);
                     if (myData != null && oppData != null)
                     {
+                        var opponentId = ownerPlayerId == 0 ? 1 : 0;
                         var state = new GameState
                         {
                             MyPlayerId = ownerPlayerId,
-                            OpponentPlayerId = ownerPlayerId == 0 ? 1 : 0,
+                            OpponentPlayerId = opponentId,
                             MyField = myData.FieldZone,
                             OpponentField = oppData.FieldZone,
                             MyHand = new List<Card>(myData.Hand.Cards),
@@ -166,7 +167,21 @@ namespace CardBattle.Managers
                             MyMP = myData.CurrentMP,
                             OpponentMP = oppData.CurrentMP
                         };
-                        TryResolvePairingSync(unit, unitBaseFallback, ownerPlayerId, ownerPlayerId == 0 ? 1 : 0, myData, oppData, state, onEffectsResolved);
+                        var onPairingEffects = unitBaseFallback.GetOnPairingEffects()?.ToList();
+                        var needAsyncPairing = onPairingEffects != null && onPairingEffects.Count > 0
+                            && EffectResolver.Instance != null
+                            && ownerPlayerId == 0;
+                        if (needAsyncPairing)
+                        {
+                            var isPartnerOnField = myData.PartnerZone?.IsPartnerOnField ?? false;
+                            var choices = onPairingEffects[0].GetAvailableTargets(state, unit, isPartnerOnField);
+                            if (choices != null && choices.Count > 1)
+                            {
+                                StartCoroutine(ResolvePairingCoroutine(unit, unitBaseFallback, ownerPlayerId, opponentId, state, playerManager, onEffectsResolved));
+                                return unit;
+                            }
+                        }
+                        TryResolvePairingSync(unit, unitBaseFallback, ownerPlayerId, opponentId, myData, oppData, state, onEffectsResolved);
                         return unit;
                     }
                 }
@@ -368,6 +383,17 @@ namespace CardBattle.Managers
 
             foreach (var effect in onPairingEffects)
                 effect.Resolve(target, state, unit, pairTargetUnit);
+
+            if (target.Kind == EffectTargetKind.PartnerCard && unit.SourceCardTemplate != null)
+            {
+                var template = unit.SourceCardTemplate;
+                if (template is GoblinCavalryUnitCard)
+                    StandingPictureManager.Instance?.SetStandingPicture(StandingPictureType.Riding);
+                else if (template is FleshArmorOgreUnitCard)
+                    StandingPictureManager.Instance?.SetStandingPicture(StandingPictureType.Restraint);
+                else if (template is GrimskinNurseryTotemCard)
+                    StandingPictureManager.Instance?.SetStandingPicture(StandingPictureType.Submission);
+            }
 
             onEffectsResolved?.Invoke(unit);
         }
