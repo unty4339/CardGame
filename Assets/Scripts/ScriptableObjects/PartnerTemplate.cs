@@ -14,9 +14,11 @@ namespace CardBattle.ScriptableObjects
         [SerializeField] private int cost = 1;
         [SerializeField] private int baseHP = 1;
         [SerializeField] private int baseAttack = 1;
+        [SerializeField] private string cardName;
         [SerializeField] private List<KeywordAbility> keywords = new();
 
         public int Cost => cost;
+        public string CardName => cardName;
         public int BaseHP => baseHP;
         public int BaseAttack => baseAttack;
         public IReadOnlyList<KeywordAbility> Keywords => keywords;
@@ -32,6 +34,7 @@ namespace CardBattle.ScriptableObjects
                 Cost = cost,
                 BaseHP = baseHP,
                 BaseAttack = baseAttack,
+                CardName = cardName,
                 Keywords = list
             };
         }

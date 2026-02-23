@@ -7,6 +7,7 @@ using CardBattle.Core;
 using CardBattle.Core.Deck;
 using CardBattle.Core.Effects;
 using CardBattle.Core.Field;
+using CardBattle.ScriptableObjects;
 using CardBattle.UI;
 using UnityEngine;
 
@@ -246,7 +247,25 @@ namespace CardBattle.Managers
                     else if (template.CardType == Core.Enums.CardType.Totem)
                     {
                         var unitManager = UnitManager.Instance;
-                        unitManager?.SpawnTotemFromCard(action.SourceCard, ownerId, ownerData.FieldZone);
+                        var totemUnit = unitManager?.SpawnTotemFromCard(action.SourceCard, ownerId, ownerData.FieldZone);
+                        if (totemUnit != null)
+                            playerManager.NotifyUnitSummoned(ownerId, action.SourceCard, totemUnit);
+
+                        var onPlayPairingEffect = (template as TotemCardTemplateBase)?.GetOnPlayPairingEffect();
+                        if (onPlayPairingEffect != null && totemUnit != null)
+                        {
+                            unitManager.RunTotemOnPlayPairing(totemUnit, action.SourceCard, ownerId, () =>
+                            {
+                                var turnActionLog = TurnActionLog.Instance;
+                                var gameFlowManager = GameFlowManager.Instance;
+                                if (turnActionLog != null && gameFlowManager != null)
+                                    turnActionLog.RecordAction(action, gameFlowManager.CurrentTurnPlayerId);
+                                var dialogueManager = DialogueManager.Instance;
+                                dialogueManager?.OnCardPlayed(action.SourceCard);
+                                NotifyActionAnimationCompleted();
+                            });
+                            return;
+                        }
                     }
                 }
 

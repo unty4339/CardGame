@@ -18,7 +18,7 @@ namespace CardBattle.UI
 
         private const float BounceOffsetY = -30f;
         private const float BounceDuration = 0.12f;
-        private const float CursorTransparentZoneWidth = 500f;
+        private const float CursorTransparentZoneWidth = 300f;
         private const float TransparentAlpha = 0.5f;
 
         private string _currentType = StandingPictureType.None;

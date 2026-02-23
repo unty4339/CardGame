@@ -19,6 +19,12 @@ namespace CardBattle.Managers
 
         [SerializeField] private DialogueLog dialogueLog;
 
+        [Tooltip("プレイヤー0の台詞枠色")]
+        [SerializeField] private Color player0FrameColor = new Color(1f, 1f, 1f, 0.95f);
+
+        [Tooltip("プレイヤー1の台詞枠色")]
+        [SerializeField] private Color player1FrameColor = new Color(0.9f, 0.95f, 1f, 0.95f);
+
         private void Awake()
         {
             if (_instance != null && _instance != this)
@@ -115,15 +121,23 @@ namespace CardBattle.Managers
             dialogueLog.AddBlock(data, turnActions);
         }
 
+        private Color GetFrameColorForPlayer(int playerId)
+        {
+            return playerId == 1 ? player1FrameColor : player0FrameColor;
+        }
+
         /// <summary>
         /// カードプレイ時に表示する台詞をカード名・ターン行動・盤面で場合分けして返す。該当なしなら null。
         /// このターンの行動: TurnActionLog.Instance.GetCurrentTurnActions()（空なら GetLastTurnActions()）。
         /// 盤面: turnActions[i].BoardStateAtAction でその行動直後の盤面（Player0HP, Player1HP, Player0MP, Player1MP, Player0HandCount, Player1HandCount, Player0Units, Player1Units）にアクセス可能。
         /// </summary>
-        private static DialogueBlockData? GetDialogueForCardPlayed(Card card)
+        private DialogueBlockData? GetDialogueForCardPlayed(Card card)
         {
             var cardName = card?.Template?.CardName;
             if (string.IsNullOrEmpty(cardName)) return null;
+
+            var turnPlayerId = GameFlowManager.Instance != null ? GameFlowManager.Instance.CurrentTurnPlayerId : 0;
+            var frameColor = GetFrameColorForPlayer(turnPlayerId);
 
             IReadOnlyList<TurnActionRecord> turnActions = TurnActionLog.Instance?.GetCurrentTurnActions();
             if (turnActions == null || turnActions.Count == 0)
@@ -146,9 +160,9 @@ namespace CardBattle.Managers
                     }
                 }
                 if (unitPlayCount == 1)
-                    return new DialogueBlockData($"{cardName}を召喚！");
+                    return new DialogueBlockData($"{cardName}を召喚！", frameColorOverride: frameColor);
                 if (unitPlayCount >= 2)
-                    return new DialogueBlockData($"さらに{cardName}を召喚！");
+                    return new DialogueBlockData($"さらに{cardName}を召喚！", frameColorOverride: frameColor);
                 return null;
             }
 
@@ -161,16 +175,17 @@ namespace CardBattle.Managers
         /// <summary>
         /// ユニット破壊時に表示する台詞を場合分けして返す。該当なしなら null。
         /// </summary>
-        private static DialogueBlockData? GetDialogueForUnitDestroyed(Unit unit)
+        private DialogueBlockData? GetDialogueForUnitDestroyed(Unit unit)
         {
             if (unit == null) return null;
-            return new DialogueBlockData("…");
+            var turnPlayerId = GameFlowManager.Instance != null ? GameFlowManager.Instance.CurrentTurnPlayerId : 0;
+            return new DialogueBlockData("…", frameColorOverride: GetFrameColorForPlayer(turnPlayerId));
         }
 
         /// <summary>
         /// カスタムトリガーIDに応じた台詞を場合分けして返す。該当なしなら null。
         /// </summary>
-        private static DialogueBlockData? GetDialogueForCustomTrigger(string triggerId)
+        private DialogueBlockData? GetDialogueForCustomTrigger(string triggerId)
         {
             if (string.IsNullOrEmpty(triggerId)) return null;
             return triggerId switch
@@ -182,17 +197,17 @@ namespace CardBattle.Managers
         /// <summary>
         /// ターン開始時に表示する台詞を返す。
         /// </summary>
-        private static DialogueBlockData? GetDialogueForTurnStarted(int turnPlayerId)
+        private DialogueBlockData? GetDialogueForTurnStarted(int turnPlayerId)
         {
-            return new DialogueBlockData("俺のターン、ドロー");
+            return new DialogueBlockData("俺のターン、ドロー", frameColorOverride: GetFrameColorForPlayer(turnPlayerId));
         }
 
         /// <summary>
         /// ターン終了時に表示する台詞を返す。
         /// </summary>
-        private static DialogueBlockData? GetDialogueForTurnEnded(int turnPlayerId)
+        private DialogueBlockData? GetDialogueForTurnEnded(int turnPlayerId)
         {
-            return new DialogueBlockData("ターンエンド！");
+            return new DialogueBlockData("ターンエンド！", frameColorOverride: GetFrameColorForPlayer(turnPlayerId));
         }
     }
 }

@@ -37,6 +37,11 @@ namespace CardBattle.Core.Field
         public bool IsPartner { get; set; }
 
         /// <summary>
+        /// トーテムとしてフィールドに出ているかどうか。トーテムは攻撃対象に選べず、攻撃権も付与されない。
+        /// </summary>
+        public bool IsTotem { get; set; }
+
+        /// <summary>
         /// オーナープレイヤーID
         /// </summary>
         public int OwnerPlayerId { get; set; }

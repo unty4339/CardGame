@@ -182,7 +182,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f78a90d430fc20742ba59d499862456f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  artwork: {fileID: 0}
+  artwork: {fileID: 7288652734213456039}
   cost: {fileID: 1013738080300690691}
   attack: {fileID: 8042436361767599935}
   hp: {fileID: 6158818499119388152}
@@ -323,7 +323,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1

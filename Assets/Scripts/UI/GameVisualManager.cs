@@ -7,6 +7,7 @@ using CardBattle.Core.Field;
 using CardBattle.Core.Partner;
 using CardBattle.Core.Player;
 using CardBattle.Managers;
+using Radishmouse;
 using UnityEngine;
 
 namespace CardBattle.UI
@@ -61,6 +62,28 @@ namespace CardBattle.UI
                 return;
             }
             Instance = this;
+
+            if (pairingLineView == null)
+            {
+                var canvas = FindFirstObjectByType<Canvas>();
+                if (canvas == null)
+                {
+                    Debug.LogWarning("[GameVisualManager] pairingLineView が未割当で、シーン内に Canvas が見つかりません。ペアリング線は表示されません。");
+                }
+                else
+                {
+                    var go = new GameObject("PairingLineView", typeof(RectTransform));
+                    var rect = (RectTransform)go.transform;
+                    rect.SetParent(canvas.transform, false);
+                    rect.anchorMin = Vector2.zero;
+                    rect.anchorMax = Vector2.one;
+                    rect.offsetMin = Vector2.zero;
+                    rect.offsetMax = Vector2.zero;
+                    go.AddComponent<UILineRenderer>();
+                    pairingLineView = go.AddComponent<PairingLineView>();
+                    go.SetActive(false);
+                }
+            }
         }
 
         private void Start()

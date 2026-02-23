@@ -37,6 +37,7 @@ namespace CardBattle.Battle
         /// </summary>
         public bool CanAttackUnit(Unit attacker, Unit target, FieldZone opponentField)
         {
+            if (target != null && target.IsTotem) return false;
             if (!attacker.CanAttack) return false;
 
             var canAttackThisTurn = attacker.TurnsOnField > 0 ||

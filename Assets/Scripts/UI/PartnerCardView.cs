@@ -1,7 +1,10 @@
+using System.Collections;
+using System.Threading.Tasks;
 using CardBattle.Core.Effects;
 using CardBattle.Core.Enums;
 using CardBattle.Core.Partner;
 using CardBattle.Managers;
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -14,9 +17,9 @@ namespace CardBattle.UI
     public class PartnerCardView : MonoBehaviour, IDragHandler, IBeginDragHandler, IEndDragHandler, IPointerClickHandler
     {
         [SerializeField] private Image artwork;
-        [SerializeField] private Text cost;
-        [SerializeField] private Text attack;
-        [SerializeField] private Text hp;
+        [SerializeField] private TextMeshProUGUI cost;
+        [SerializeField] private TextMeshProUGUI attack;
+        [SerializeField] private TextMeshProUGUI hp;
         [SerializeField] private CanvasGroup canvasGroup;
 
         private RectTransform _rectTransform;
@@ -47,7 +50,33 @@ namespace CardBattle.UI
             if (cost != null) cost.text = partner.Cost.ToString();
             if (attack != null) attack.text = partner.BaseAttack.ToString();
             if (hp != null) hp.text = partner.BaseHP.ToString();
-            if (artwork != null) { /* 絵柄は未設定 */ }
+            if (artwork != null && !string.IsNullOrEmpty(partner.CardName))
+                StartCoroutine(LoadArtworkIfExists(partner.CardName, artwork));
+        }
+
+        private static IEnumerator LoadArtworkIfExists(string cardName, Image target)
+        {
+            if (string.IsNullOrEmpty(cardName) || target == null) yield break;
+            var address = "Assets/Images/" + cardName + ".png";
+            var am = AddressableManager.Instance;
+            if (am == null) yield break;
+
+            var hasTask = am.HasAssetAsync(address);
+            yield return new WaitUntil(() => hasTask.IsCompleted);
+            if (!hasTask.Result) yield break;
+
+            Task<Sprite> loadTask = null;
+            try
+            {
+                loadTask = am.LoadAssetAsync<Sprite>(address);
+            }
+            catch
+            {
+                yield break;
+            }
+            yield return new WaitUntil(() => loadTask.IsCompleted);
+            if (loadTask.Status == TaskStatus.RanToCompletion && loadTask.Result != null && target != null)
+                target.sprite = loadTask.Result;
         }
 
         /// <summary>

@@ -1,3 +1,5 @@
+using System.Collections;
+using System.Threading.Tasks;
 using CardBattle.Core;
 using CardBattle.Core.Deck;
 using CardBattle.Core.Enums;
@@ -64,7 +66,36 @@ namespace CardBattle.UI
             if (attack != null) attack.text = unitTemplate != null ? unitTemplate.BaseAttack.ToString() : "0";
             if (hp != null) hp.text = unitTemplate != null ? unitTemplate.BaseHP.ToString() : "0";
             if (cardNameText != null) cardNameText.text = data.Template.CardName;
-            if (artwork != null) { /* 絵柄は CardTemplate に Sprite が無いため未設定 */ }
+            if (artwork != null && !string.IsNullOrEmpty(data.Template.CardName))
+                StartCoroutine(LoadArtworkIfExists(data.Template.CardName, artwork));
+        }
+
+        private static IEnumerator LoadArtworkIfExists(string cardName, Image target)
+        {
+            Debug.Log($"LoadArtworkIfExists: {cardName}");
+            if (string.IsNullOrEmpty(cardName) || target == null) yield break;
+            var address = "Assets/Images/" + cardName + ".png";
+            var am = AddressableManager.Instance;
+            if (am == null) yield break;
+
+            var hasTask = am.HasAssetAsync(address);
+            yield return new WaitUntil(() => hasTask.IsCompleted);
+            if (!hasTask.Result) yield break;
+
+            Task<Sprite> loadTask = null;
+            try
+            {
+                Debug.Log($"LoadAssetAsync: {address}");
+                loadTask = am.LoadAssetAsync<Sprite>(address);
+            }
+            catch
+            {
+                yield break;
+            }
+            yield return new WaitUntil(() => loadTask.IsCompleted);
+            Debug.Log($"LoadAssetAsync completed: {loadTask.Result}");
+            if (loadTask.Status == TaskStatus.RanToCompletion && loadTask.Result != null && target != null)
+                target.sprite = loadTask.Result;
         }
 
         /// <summary>

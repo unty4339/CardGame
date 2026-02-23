@@ -1,10 +1,12 @@
 using System;
 using System.Collections;
+using System.Threading.Tasks;
 using CardBattle.Core.Effects;
 using CardBattle.Core.Enums;
 using CardBattle.Core.Field;
 using CardBattle.Managers;
 using Coffee.UIEffects;
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -16,8 +18,9 @@ namespace CardBattle.UI
     /// </summary>
     public class UnitView : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
     {
-        [SerializeField] private Text attackText;
-        [SerializeField] private Text hpText;
+        [SerializeField] private TextMeshProUGUI attackText;
+        [SerializeField] private TextMeshProUGUI hpText;
+        [SerializeField] private TextMeshProUGUI unitNameText;
         [SerializeField] private Image bodyImage;
         [SerializeField] private float stepBackAmount = 50f;
         [SerializeField] private float rushDuration = 0.1f;
@@ -198,13 +201,49 @@ namespace CardBattle.UI
             Unit = unitData;
             if (bodyImage != null) _normalColor = bodyImage.color;
             RefreshDisplay();
+            if (bodyImage != null && unitData?.SourceCardTemplate != null && !string.IsNullOrEmpty(unitData.SourceCardTemplate.CardName))
+                StartCoroutine(LoadArtworkIfExists(unitData.SourceCardTemplate.CardName, bodyImage));
+        }
+
+        private static IEnumerator LoadArtworkIfExists(string cardName, Image target)
+        {
+            if (string.IsNullOrEmpty(cardName) || target == null) yield break;
+            var address = "Assets/Images/" + cardName + ".png";
+            var am = AddressableManager.Instance;
+            if (am == null) yield break;
+
+            var hasTask = am.HasAssetAsync(address);
+            yield return new WaitUntil(() => hasTask.IsCompleted);
+            if (!hasTask.Result) yield break;
+
+            Task<Sprite> loadTask = null;
+            try
+            {
+                loadTask = am.LoadAssetAsync<Sprite>(address);
+            }
+            catch
+            {
+                yield break;
+            }
+            yield return new WaitUntil(() => loadTask.IsCompleted);
+            if (loadTask.Status == TaskStatus.RanToCompletion && loadTask.Result != null && target != null)
+                target.sprite = loadTask.Result;
         }
 
         private void RefreshDisplay()
         {
             if (Unit == null) return;
-            if (attackText != null) attackText.text = Unit.Attack.ToString();
-            if (hpText != null) hpText.text = Unit.HP.ToString();
+            if (Unit.IsTotem)
+            {
+                if (attackText != null) attackText.text = "";
+                if (hpText != null) hpText.text = "";
+            }
+            else
+            {
+                if (attackText != null) attackText.text = Unit.Attack.ToString();
+                if (hpText != null) hpText.text = Unit.HP.ToString();
+            }
+            if (unitNameText != null) unitNameText.text = Unit.SourceCardTemplate?.CardName ?? "";
         }
 
         /// <summary>

@@ -24,6 +24,7 @@ namespace CardBattle.UI
             {
                 lineRenderer.color = new Color(1f, 1f, 1f, 0.9f);
                 lineRenderer.thickness = lineThickness;
+                lineRenderer.raycastTarget = false;
             }
         }
 

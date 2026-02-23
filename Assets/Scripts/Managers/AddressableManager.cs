@@ -1,8 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.AsyncOperations;
+using UnityEngine.ResourceManagement.ResourceLocations;
 
 /// <summary>
 /// Addressablesを管理するシングルトンクラス
@@ -260,6 +262,53 @@ public class AddressableManager : MonoBehaviour
             string errorMsg = $"GameObjectのインスタンス化中にエラーが発生しました: {address}";
             Debug.LogError($"[AddressableManager] {errorMsg}. エラー: {ex.Message}");
             throw new AddressableAssetNotFoundException(address, ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// 指定したアドレスにアセットが存在するかどうかを非同期で判定する。
+    /// 存在しないアドレスの場合は例外を投げず false を返す。
+    /// </summary>
+    /// <param name="address">アセットのアドレス</param>
+    /// <returns>存在する場合 true</returns>
+    public async Task<bool> HasAssetAsync(string address)
+    {
+        if (string.IsNullOrEmpty(address)) return false;
+
+        AsyncOperationHandle<IList<IResourceLocation>> handle = Addressables.LoadResourceLocationsAsync(address);
+        try
+        {
+            await handle.Task;
+            var result = handle.Result != null && handle.Result.Count > 0;
+            return result;
+        }
+        finally
+        {
+            if (handle.IsValid())
+                Addressables.Release(handle);
+        }
+    }
+
+    /// <summary>
+    /// 指定したアドレスにアセットが存在するかどうかを同期で判定する。
+    /// 存在しないアドレスの場合は例外を投げず false を返す。メインスレッドをブロックする可能性があります。
+    /// </summary>
+    /// <param name="address">アセットのアドレス</param>
+    /// <returns>存在する場合 true</returns>
+    public bool HasAsset(string address)
+    {
+        if (string.IsNullOrEmpty(address)) return false;
+
+        var handle = Addressables.LoadResourceLocationsAsync(address);
+        try
+        {
+            var list = handle.WaitForCompletion();
+            return list != null && list.Count > 0;
+        }
+        finally
+        {
+            if (handle.IsValid())
+                Addressables.Release(handle);
         }
     }
 

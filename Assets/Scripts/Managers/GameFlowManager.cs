@@ -80,6 +80,21 @@ namespace CardBattle.Managers
         }
 
         /// <summary>
+        /// 自分プレイヤー用のデフォルトパートナー（未来航路の番人、クーリア）を生成する
+        /// </summary>
+        private static Partner CreateDefaultPlayerPartner()
+        {
+            return new Partner
+            {
+                Cost = 1,
+                BaseHP = 1,
+                BaseAttack = 1,
+                CardName = "未来航路の番人、クーリア",
+                Keywords = new System.Collections.Generic.List<KeywordAbility>()
+            };
+        }
+
+        /// <summary>
         /// 戦闘を初期化する
         /// </summary>
         public void InitializeBattle()
@@ -117,7 +132,7 @@ namespace CardBattle.Managers
 
                 var partner = recipe.PartnerTemplate != null
                     ? recipe.PartnerTemplate.ToPartner()
-                    : CreateDummyPartner();
+                    : (i == 0 ? CreateDefaultPlayerPartner() : CreateDummyPartner());
                 partnerManager?.PlacePartner(i, partner);
             }
 

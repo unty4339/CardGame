@@ -14,5 +14,10 @@ namespace CardBattle.Core.Partner
         public int BaseHP { get; set; }
         public int BaseAttack { get; set; }
         public List<KeywordAbility> Keywords { get; set; } = new();
+
+        /// <summary>
+        /// アートワーク用のカード名。null/空のときは画像を探さない。
+        /// </summary>
+        public string CardName { get; set; }
     }
 }

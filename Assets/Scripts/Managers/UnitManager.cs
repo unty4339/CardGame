@@ -224,26 +224,7 @@ namespace CardBattle.Managers
             else
                 target = choices[0];
 
-            Unit pairTargetUnit = null;
-            if (target.Kind == EffectTargetKind.Unit && target.UnitInstanceId != null)
-            {
-                var b = myData.FieldZone.Units.Find(u => u.InstanceId == target.UnitInstanceId.Value)
-                    ?? oppData.FieldZone.Units.Find(u => u.InstanceId == target.UnitInstanceId.Value);
-                if (b != null)
-                {
-                    unit.PairingTarget = b;
-                    b.PairingTarget = unit;
-                    pairTargetUnit = b;
-                }
-            }
-            else if (target.Kind == EffectTargetKind.PartnerCard)
-            {
-                unit.PairingWithPartnerCard = true;
-            }
-
-            foreach (var effect in onPairingEffects)
-                effect.Resolve(target, state, unit, pairTargetUnit);
-
+            ApplyPairingResult(unit, target, onPairingEffects, state, myData, oppData);
             onEffectsResolved?.Invoke(unit);
         }
 
@@ -364,6 +345,18 @@ namespace CardBattle.Managers
                 target = choices[0];
             }
 
+            ApplyPairingResult(unit, target, onPairingEffects, state, myData, oppData);
+            onEffectsResolved?.Invoke(unit);
+        }
+
+        private static void ApplyPairingResult(
+            Unit unit,
+            EffectTarget target,
+            IReadOnlyList<IOnPairingEffect> effects,
+            GameState state,
+            PlayerData myData,
+            PlayerData oppData)
+        {
             Unit pairTargetUnit = null;
             if (target.Kind == EffectTargetKind.Unit && target.UnitInstanceId != null)
             {
@@ -381,8 +374,11 @@ namespace CardBattle.Managers
                 unit.PairingWithPartnerCard = true;
             }
 
-            foreach (var effect in onPairingEffects)
-                effect.Resolve(target, state, unit, pairTargetUnit);
+            if (effects != null)
+            {
+                foreach (var effect in effects)
+                    effect.Resolve(target, state, unit, pairTargetUnit);
+            }
 
             if (target.Kind == EffectTargetKind.PartnerCard && unit.SourceCardTemplate != null)
             {
@@ -394,14 +390,96 @@ namespace CardBattle.Managers
                 else if (template is GrimskinNurseryTotemCard)
                     StandingPictureManager.Instance?.SetStandingPicture(StandingPictureType.Submission);
             }
-
-            onEffectsResolved?.Invoke(unit);
         }
 
         /// <summary>
-        /// カード、オーナーID、フィールドゾーンを受け取り、対応するトーテムを登場させる
+        /// トーテムの発動時ペアリングを解決する。効果がある場合は対象取得ののち必要なら非同期でプレイヤーに選択させ、適用後に onComplete を呼ぶ。
         /// </summary>
-        public Totem SpawnTotemFromCard(Card card, int ownerPlayerId, FieldZone fieldZone)
+        public void RunTotemOnPlayPairing(Unit totemUnit, Card card, int ownerId, Action onComplete)
+        {
+            if (totemUnit == null || card?.Template == null || onComplete == null)
+            {
+                onComplete?.Invoke();
+                return;
+            }
+
+            var totemBase = card.Template as TotemCardTemplateBase;
+            var effect = totemBase?.GetOnPlayPairingEffect();
+            if (effect == null)
+            {
+                onComplete();
+                return;
+            }
+
+            var playerManager = PlayerManager.Instance;
+            var opponentId = ownerId == 0 ? 1 : 0;
+            var myData = playerManager?.GetPlayerData(ownerId);
+            var oppData = playerManager?.GetPlayerData(opponentId);
+            if (myData == null || oppData == null)
+            {
+                onComplete();
+                return;
+            }
+
+            var state = new GameState
+            {
+                MyPlayerId = ownerId,
+                OpponentPlayerId = opponentId,
+                MyField = myData.FieldZone,
+                OpponentField = oppData.FieldZone,
+                MyHand = new List<Card>(myData.Hand.Cards),
+                MyHP = myData.HP,
+                OpponentHP = oppData.HP,
+                MyMP = myData.CurrentMP,
+                OpponentMP = oppData.CurrentMP
+            };
+
+            var isPartnerOnField = myData.PartnerZone?.IsPartnerOnField ?? false;
+            var choices = effect.GetAvailableTargets(state, totemUnit, isPartnerOnField);
+            if (choices == null || choices.Count == 0)
+            {
+                onComplete();
+                return;
+            }
+
+            var resolver = EffectResolver.Instance;
+            var needTargetSelection = resolver != null && ownerId == 0 && choices.Count > 1;
+
+            if (needTargetSelection)
+            {
+                StartCoroutine(TotemOnPlayPairingCoroutine(totemUnit, effect, ownerId, opponentId, state, myData, oppData, choices, onComplete));
+                return;
+            }
+
+            var target = choices[0];
+            ApplyPairingResult(totemUnit, target, new List<IOnPairingEffect> { effect }, state, myData, oppData);
+            onComplete();
+        }
+
+        private IEnumerator TotemOnPlayPairingCoroutine(
+            Unit totemUnit,
+            IOnPairingEffect effect,
+            int ownerId,
+            int opponentId,
+            GameState state,
+            PlayerData myData,
+            PlayerData oppData,
+            IList<EffectTarget> choices,
+            Action onComplete)
+        {
+            var resolver = EffectResolver.Instance;
+            var task = resolver.RequestTargetAsync(choices, ownerId);
+            while (!task.IsCompleted)
+                yield return null;
+            var target = task.GetAwaiter().GetResult();
+            ApplyPairingResult(totemUnit, target, new List<IOnPairingEffect> { effect }, state, myData, oppData);
+            onComplete();
+        }
+
+        /// <summary>
+        /// カード、オーナーID、フィールドゾーンを受け取り、トーテムをユニットとしてフィールドに登場させる
+        /// </summary>
+        public Unit SpawnTotemFromCard(Card card, int ownerPlayerId, FieldZone fieldZone)
         {
             if (card == null)
                 throw new ArgumentNullException(nameof(card));
@@ -415,13 +493,19 @@ namespace CardBattle.Managers
             if (totemData == null)
                 throw new ArgumentException("CardTemplate.TotemData is null for Totem card.", nameof(card));
 
-            var totem = new Totem
+            var unit = new Unit
             {
-                OwnerPlayerId = ownerPlayerId
+                HP = 0,
+                Attack = 0,
+                TurnsOnField = 0,
+                CanAttack = false,
+                OwnerPlayerId = ownerPlayerId,
+                SourceCardTemplate = card.Template,
+                IsTotem = true
             };
 
-            fieldZone.Totems.Add(totem);
-            return totem;
+            fieldZone.Units.Add(unit);
+            return unit;
         }
     }
 }

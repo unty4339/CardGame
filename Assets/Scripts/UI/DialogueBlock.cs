@@ -43,12 +43,14 @@ namespace CardBattle.UI
 
             if (bubbleImage != null)
             {
-                bubbleImage.color = data.bubbleType switch
-                {
-                    DialogueBubbleType.Thought => ThoughtBubbleColor,
-                    DialogueBubbleType.Shout => ShoutBubbleColor,
-                    _ => NormalBubbleColor
-                };
+                bubbleImage.color = data.useFrameColorOverride
+                    ? data.frameColor
+                    : data.bubbleType switch
+                    {
+                        DialogueBubbleType.Thought => ThoughtBubbleColor,
+                        DialogueBubbleType.Shout => ShoutBubbleColor,
+                        _ => NormalBubbleColor
+                    };
             }
 
             if (speakerIconImage != null)

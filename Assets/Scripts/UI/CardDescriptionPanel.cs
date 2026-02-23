@@ -23,6 +23,12 @@ namespace CardBattle.UI
                 return;
             }
             Instance = this;
+            if (descriptionText != null)
+            {
+                descriptionText.enableAutoSizing = true;
+                descriptionText.fontSizeMin = 5f;
+                descriptionText.fontSizeMax = 12f;
+            }
             Hide();
         }
 

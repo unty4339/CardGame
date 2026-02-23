@@ -60,6 +60,14 @@ namespace CardBattle.Managers
             OnSpellPlayed?.Invoke(playerId, card);
         }
 
+        /// <summary>
+        /// ユニット召喚を通知する（トーテムプレイ時など、Unit がフィールドに登場したときに呼ぶ）
+        /// </summary>
+        public void NotifyUnitSummoned(int playerId, Card card, Unit unit)
+        {
+            OnUnitSummoned?.Invoke(playerId, card, unit);
+        }
+
         private readonly Dictionary<int, PlayerData> _players = new();
 
         /// <summary>
@@ -370,7 +378,7 @@ namespace CardBattle.Managers
         }
 
         /// <summary>
-        /// フィールドの全ユニットに攻撃権を付与する
+        /// フィールドの全ユニットに攻撃権を付与する（トーテムは除く）
         /// </summary>
         public void GrantAttackToAllUnits(int playerId)
         {
@@ -379,6 +387,7 @@ namespace CardBattle.Managers
 
             foreach (var unit in data.FieldZone.Units)
             {
+                if (unit.IsTotem) continue;
                 unit.CanAttack = true;
             }
         }

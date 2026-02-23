@@ -350,6 +350,9 @@ namespace CardBattle.Editor
             tmp.fontSize = 14;
             tmp.overflowMode = TMPro.TextOverflowModes.Overflow;
             tmp.textWrappingMode = TMPro.TextWrappingModes.Normal;
+            tmp.enableAutoSizing = true;
+            tmp.fontSizeMin = 5f;
+            tmp.fontSizeMax = 12f;
 
             var panel = go.AddComponent<CardBattle.UI.CardDescriptionPanel>();
             var so = new SerializedObject(panel);
@@ -606,7 +609,7 @@ namespace CardBattle.Editor
             attackRect.anchorMax = new Vector2(0, 0);
             attackRect.anchoredPosition = new Vector2(15, 10);
             attackRect.sizeDelta = new Vector2(30, 20);
-            var attackText = attackGo.AddComponent<Text>();
+            var attackText = attackGo.AddComponent<TextMeshProUGUI>();
             attackText.text = "0";
             attackText.fontSize = 12;
 
@@ -617,7 +620,7 @@ namespace CardBattle.Editor
             hpRect.anchorMax = new Vector2(1, 0);
             hpRect.anchoredPosition = new Vector2(-15, 10);
             hpRect.sizeDelta = new Vector2(30, 20);
-            var hpText = hpGo.AddComponent<Text>();
+            var hpText = hpGo.AddComponent<TextMeshProUGUI>();
             hpText.text = "0";
             hpText.fontSize = 12;
 
@@ -660,7 +663,7 @@ namespace CardBattle.Editor
             costRect.anchorMax = new Vector2(0, 1);
             costRect.anchoredPosition = new Vector2(15, -15);
             costRect.sizeDelta = new Vector2(30, 20);
-            var costText = costGo.AddComponent<Text>();
+            var costText = costGo.AddComponent<TextMeshProUGUI>();
             costText.text = "0";
             costText.fontSize = 14;
 
@@ -671,7 +674,7 @@ namespace CardBattle.Editor
             attackRect.anchorMax = new Vector2(0, 0);
             attackRect.anchoredPosition = new Vector2(15, 15);
             attackRect.sizeDelta = new Vector2(30, 20);
-            var attackText = attackGo.AddComponent<Text>();
+            var attackText = attackGo.AddComponent<TextMeshProUGUI>();
             attackText.text = "0";
             attackText.fontSize = 14;
 
@@ -682,7 +685,7 @@ namespace CardBattle.Editor
             hpRect.anchorMax = new Vector2(1, 0);
             hpRect.anchoredPosition = new Vector2(-15, 15);
             hpRect.sizeDelta = new Vector2(30, 20);
-            var hpText = hpGo.AddComponent<Text>();
+            var hpText = hpGo.AddComponent<TextMeshProUGUI>();
             hpText.text = "0";
             hpText.fontSize = 14;
 
