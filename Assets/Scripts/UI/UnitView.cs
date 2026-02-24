@@ -55,15 +55,29 @@ namespace CardBattle.UI
             if (_canvasGroup != null)
                 _canvasGroup.alpha = Mathf.Clamp01(alpha);
         }
+        /// <summary>ユニットのみ攻撃可能なときのアウトライン色（黄色）</summary>
+        private static readonly Color OutlineColorUnitOnly = Color.yellow;
+        /// <summary>ユニットもプレイヤーも攻撃可能なときのアウトライン色（緑）</summary>
+        private static readonly Color OutlineColorBoth = new Color(0.2f, 1f, 0.2f, 1f);
+
         private void Update()
         {
             if (uiEffect != null)
             {
                 var gameFlow = GameFlowManager.Instance;
-                bool myTurnAndCanAttack = Unit != null && gameFlow != null
-                    && gameFlow.CurrentTurnPlayerId == Unit.OwnerPlayerId
-                    && Unit.CanAttack;
-                uiEffect.shadowFade = myTurnAndCanAttack ? 0.1f : 0f;
+                bool myTurn = Unit != null && gameFlow != null && gameFlow.CurrentTurnPlayerId == Unit.OwnerPlayerId;
+                bool canAttackUnit = Unit != null && Unit.CanAttackUnit;
+                bool canAttackPlayer = Unit != null && Unit.CanAttackPlayer;
+
+                if (myTurn && (canAttackUnit || canAttackPlayer))
+                {
+                    uiEffect.shadowFade = 0.1f;
+                    uiEffect.shadowColor = canAttackPlayer ? OutlineColorBoth : OutlineColorUnitOnly;
+                }
+                else
+                {
+                    uiEffect.shadowFade = 0f;
+                }
             }
         }
 
@@ -77,20 +91,18 @@ namespace CardBattle.UI
                     gvm?.ShowPairingLine(this, otherView);
             }
             if (Unit?.SourceCardTemplate == null) return;
-            var desc = Unit.SourceCardTemplate.Description;
-            if (!string.IsNullOrEmpty(desc))
-                CardDescriptionPanel.Instance?.Show(desc);
+            CardDescriptionPanel.ShowDescription(Unit.SourceCardTemplate.Description);
         }
 
         public void OnPointerExit(PointerEventData eventData)
         {
             GameVisualManager.Instance?.HidePairingLine();
-            CardDescriptionPanel.Instance?.Hide();
+            CardDescriptionPanel.HideDescription();
         }
 
         public void OnBeginDrag(PointerEventData eventData)
         {
-            CardDescriptionPanel.Instance?.Hide();
+            CardDescriptionPanel.HideDescription();
             if (Unit == null || Unit.OwnerPlayerId != 0) return;
             var controller = AttackDragController.Instance;
             if (controller == null || !controller.TryStartAttackDrag(this)) return;
@@ -201,8 +213,9 @@ namespace CardBattle.UI
             Unit = unitData;
             if (bodyImage != null) _normalColor = bodyImage.color;
             RefreshDisplay();
-            if (bodyImage != null && unitData?.SourceCardTemplate != null && !string.IsNullOrEmpty(unitData.SourceCardTemplate.CardName))
-                StartCoroutine(LoadArtworkIfExists(unitData.SourceCardTemplate.CardName, bodyImage));
+            var nameForArt = unitData?.SourceCardTemplate?.CardName ?? unitData?.DisplayName ?? "";
+            if (bodyImage != null && !string.IsNullOrEmpty(nameForArt))
+                StartCoroutine(LoadArtworkIfExists(nameForArt, bodyImage));
         }
 
         private static IEnumerator LoadArtworkIfExists(string cardName, Image target)
@@ -240,10 +253,11 @@ namespace CardBattle.UI
             }
             else
             {
-                if (attackText != null) attackText.text = Unit.Attack.ToString();
+                var effectiveAttack = PlayerManager.Instance != null ? PlayerManager.Instance.GetEffectiveAttack(Unit) : Unit.Attack;
+                if (attackText != null) attackText.text = effectiveAttack.ToString();
                 if (hpText != null) hpText.text = Unit.HP.ToString();
             }
-            if (unitNameText != null) unitNameText.text = Unit.SourceCardTemplate?.CardName ?? "";
+            if (unitNameText != null) unitNameText.text = Unit.SourceCardTemplate?.CardName ?? Unit.DisplayName ?? "";
         }
 
         /// <summary>

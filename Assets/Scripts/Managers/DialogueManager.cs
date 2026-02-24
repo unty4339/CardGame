@@ -19,11 +19,11 @@ namespace CardBattle.Managers
 
         [SerializeField] private DialogueLog dialogueLog;
 
-        [Tooltip("プレイヤー0の台詞枠色")]
-        [SerializeField] private Color player0FrameColor = new Color(1f, 1f, 1f, 0.95f);
+        private Color player0FrameColor = new Color(1f, 0.775f, 0.575f, 0.95f);
 
-        [Tooltip("プレイヤー1の台詞枠色")]
-        [SerializeField] private Color player1FrameColor = new Color(0.9f, 0.95f, 1f, 0.95f);
+        private Color player1FrameColor = new Color(0.825f, 1f, 0.675f, 0.95f);
+
+        private Color partnerFrameColor = new Color(0.6f, 0.75f, 1f, 0.95f);
 
         private void Awake()
         {
@@ -40,6 +40,9 @@ namespace CardBattle.Managers
             var pm = PlayerManager.Instance;
             if (pm != null)
                 pm.OnUnitDestroyed += HandleUnitDestroyed;
+            var partnerManager = PartnerManager.Instance;
+            if (partnerManager != null)
+                partnerManager.OnPartnerSummoned += OnPartnerPlayed;
         }
 
         private void OnDestroy()
@@ -47,6 +50,9 @@ namespace CardBattle.Managers
             var pm = PlayerManager.Instance;
             if (pm != null)
                 pm.OnUnitDestroyed -= HandleUnitDestroyed;
+            var partnerManager = PartnerManager.Instance;
+            if (partnerManager != null)
+                partnerManager.OnPartnerSummoned -= OnPartnerPlayed;
             if (_instance == this)
                 _instance = null;
         }
@@ -110,6 +116,23 @@ namespace CardBattle.Managers
             var data = GetDialogueForTurnEnded(turnPlayerId);
             if (data is { } d)
                 AddBlockWithTurnActions(d);
+        }
+
+        /// <summary>
+        /// パートナーカードがプレイされたときに呼ばれる。プレイヤー0のときのみ青枠で台詞を表示する。
+        /// </summary>
+        public void OnPartnerPlayed(int playerId, Unit unit)
+        {
+            if (playerId != 0) return;
+            AddBlockWithTurnActions(new DialogueBlockData("よしっボクに任せて！", frameColorOverride: partnerFrameColor));
+        }
+
+        /// <summary>
+        /// ペアリングの効果対象にパートナーカードが選ばれたときに呼ばれる。青枠で台詞を表示する。
+        /// </summary>
+        public void OnPartnerChosenAsPairingTarget()
+        {
+            AddBlockWithTurnActions(new DialogueBlockData("ぼっ、ボクなの！？", frameColorOverride: partnerFrameColor));
         }
 
         private void AddBlockWithTurnActions(DialogueBlockData data)
@@ -178,8 +201,16 @@ namespace CardBattle.Managers
         private DialogueBlockData? GetDialogueForUnitDestroyed(Unit unit)
         {
             if (unit == null) return null;
+            // ターンプレイヤーのユニットが破壊されたときは台詞を出さない
+            var gfm = GameFlowManager.Instance;
+            if (gfm != null && unit.OwnerPlayerId == gfm.CurrentTurnPlayerId)
+                return null;
+            var unitName = unit.SourceCardTemplate?.CardName ?? unit.DisplayName ?? "ユニット";
+            var text = $"{unitName}を撃破！";
+            if (unit.IsPartner && unit.OwnerPlayerId == 0)
+                return new DialogueBlockData(text, frameColorOverride: partnerFrameColor);
             var turnPlayerId = GameFlowManager.Instance != null ? GameFlowManager.Instance.CurrentTurnPlayerId : 0;
-            return new DialogueBlockData("…", frameColorOverride: GetFrameColorForPlayer(turnPlayerId));
+            return new DialogueBlockData(text, frameColorOverride: GetFrameColorForPlayer(turnPlayerId));
         }
 
         /// <summary>

@@ -140,17 +140,13 @@ namespace CardBattle.AI
 
             foreach (var unit in state.MyField.Units)
             {
-                if (!unit.CanAttack) continue;
+                if (!unit.CanAttackUnit && !unit.CanAttackPlayer) continue;
 
-                var canAttackPlayer = state.OpponentField.Units.TrueForAll(u => !u.Keywords.Contains(Core.Enums.KeywordAbility.Guard));
-                var canAttackThisTurn = unit.TurnsOnField > 0 ||
-                    unit.Keywords.Contains(Core.Enums.KeywordAbility.Rush) ||
-                    unit.Keywords.Contains(Core.Enums.KeywordAbility.DivineSpeed);
-
-                if (canAttackThisTurn)
+                if (unit.CanAttackUnit)
                 {
                     foreach (var target in state.OpponentField.Units)
                     {
+                        if (target.IsTotem) continue;
                         actions.Add(new GameAction
                         {
                             ActionType = ActionType.Attack,
@@ -158,8 +154,12 @@ namespace CardBattle.AI
                             Target = target
                         });
                     }
+                }
 
-                    if (canAttackPlayer && (unit.TurnsOnField > 0 || unit.Keywords.Contains(Core.Enums.KeywordAbility.DivineSpeed)))
+                if (unit.CanAttackPlayer)
+                {
+                    var hasGuard = state.OpponentField.Units.Any(u => u.Keywords != null && u.Keywords.Contains(KeywordAbility.Guard));
+                    if (!hasGuard)
                     {
                         actions.Add(new GameAction
                         {
@@ -191,12 +191,15 @@ namespace CardBattle.AI
                 if (action.SourceCard.Template.CardType == CardType.Unit && playUnitBase != null)
                 {
                     var (summonHp, summonAttack, summonKeywords) = playUnitBase.GetUnitStats();
+                    var hasRush = summonKeywords.Contains(KeywordAbility.Rush) || summonKeywords.Contains(KeywordAbility.DivineSpeed);
+                    var hasDivineSpeed = summonKeywords.Contains(KeywordAbility.DivineSpeed);
                     var summonedUnit = new Unit
                     {
                         HP = summonHp,
                         Attack = summonAttack,
                         TurnsOnField = 0,
-                        CanAttack = false,
+                        CanAttackUnit = hasRush,
+                        CanAttackPlayer = hasDivineSpeed,
                         Keywords = new List<Core.Enums.KeywordAbility>(summonKeywords),
                         OwnerPlayerId = nextState.MyPlayerId,
                         IsPartner = false
@@ -216,7 +219,11 @@ namespace CardBattle.AI
             {
                 var attackerId = action.SourceUnit.InstanceId;
                 var attacker = nextState.MyField.Units.Find(u => u.InstanceId == attackerId);
-                if (attacker != null) attacker.CanAttack = false;
+                if (attacker != null)
+                {
+                    attacker.CanAttackUnit = false;
+                    attacker.CanAttackPlayer = false;
+                }
 
                 if (action.Target is Unit targetUnit)
                 {
@@ -269,7 +276,14 @@ namespace CardBattle.AI
                 if (bestAction == null) break;
 
                 actionSequence.Add(bestAction);
+                var oldMyFieldInstanceIds = new HashSet<int>(currentState.MyField.Units.Select(u => u.InstanceId));
                 currentState = SimulateNextState(currentState, bestAction);
+                if (bestAction.ActionType == ActionType.Play
+                    && bestAction.SourceCard?.Template is UnitCardTemplateBase
+                    && currentState.MyField.Units.FirstOrDefault(u => !oldMyFieldInstanceIds.Contains(u.InstanceId)) is Unit newSummonedUnit)
+                {
+                    bestAction.InstanceIdForSummonedUnit = newSummonedUnit.InstanceId;
+                }
             }
 
             return actionSequence;
@@ -285,7 +299,8 @@ namespace CardBattle.AI
                     HP = u.HP,
                     Attack = u.Attack,
                     TurnsOnField = u.TurnsOnField,
-                    CanAttack = u.CanAttack,
+                    CanAttackUnit = u.CanAttackUnit,
+                    CanAttackPlayer = u.CanAttackPlayer,
                     Keywords = new List<Core.Enums.KeywordAbility>(u.Keywords),
                     InstanceId = u.InstanceId,
                     OwnerPlayerId = u.OwnerPlayerId,

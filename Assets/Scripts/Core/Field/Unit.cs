@@ -17,10 +17,29 @@ namespace CardBattle.Core.Field
             InstanceId = _nextId++;
         }
 
+        /// <summary>
+        /// 指定した InstanceId でユニットを生成する。AI シミュレーションと実ゲームの ID を統一するために使用する。
+        /// _nextId を id+1 以上に更新し、以降の new Unit() がこの id を再利用しないようにする。
+        /// </summary>
+        public static Unit CreateWithInstanceId(int id)
+        {
+            if (_nextId <= id)
+                _nextId = id + 1;
+            return new Unit(id);
+        }
+
+        private Unit(int instanceId)
+        {
+            InstanceId = instanceId;
+        }
+
         public int HP { get; set; }
         public int Attack { get; set; }
         public int TurnsOnField { get; set; }
-        public bool CanAttack { get; set; }
+        /// <summary>相手ユニットへ攻撃可能か</summary>
+        public bool CanAttackUnit { get; set; }
+        /// <summary>相手プレイヤーへ攻撃可能か</summary>
+        public bool CanAttackPlayer { get; set; }
         public List<KeywordAbility> Keywords { get; set; } = new();
         public List<Effect> Effects { get; set; } = new();
         public Unit PairingTarget { get; set; }
@@ -50,5 +69,10 @@ namespace CardBattle.Core.Field
         /// このユニットの元になったカードのテンプレート。説明文表示などに使用する。
         /// </summary>
         public CardTemplate SourceCardTemplate { get; set; }
+
+        /// <summary>
+        /// SourceCardTemplate が null のときの表示名（パートナーユニット用）。名前・アートワーク表示に使用する。
+        /// </summary>
+        public string DisplayName { get; set; }
     }
 }

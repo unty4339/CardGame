@@ -17,5 +17,10 @@ namespace CardBattle.Core
         /// プレイ＋召喚時効果でターゲットを選んだ場合の選択結果
         /// </summary>
         public EffectTarget? SelectedEffectTarget { get; set; }
+
+        /// <summary>
+        /// この Play で召喚するユニットに付ける InstanceId。AI がシミュレーション結果を渡す用。null のときは従来どおり付与。
+        /// </summary>
+        public int? InstanceIdForSummonedUnit { get; set; }
     }
 }

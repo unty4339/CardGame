@@ -35,6 +35,7 @@ namespace CardBattle.UI
         [SerializeField] private Transform partnerZoneAnchorPlayer1;
         [SerializeField] private PartnerCardView partnerCardViewPrefab;
         [SerializeField] private PairingLineView pairingLineView;
+        [SerializeField] private GameObject targetSelectionPromptPrefab;
 
         [Header("手札→場 召喚アニメ")]
         [SerializeField] private float handCardPlayOutDuration = 0.3f;
@@ -52,6 +53,7 @@ namespace CardBattle.UI
         private const string AttackVideoAddress = "Assets/Prefabs/AttackVideo.prefab";
         private GameObject _bombVideoPrefab;
         private GameObject _attackVideoPrefab;
+        private GameObject _targetSelectionPromptInstance;
 
         private void Awake()
         {
@@ -97,6 +99,7 @@ namespace CardBattle.UI
                 pm.OnSpellPlayed += OnSpellPlayed;
                 pm.OnPlayerDataChanged += OnPlayerDataChanged;
                 pm.OnUnitHpChanged += OnUnitHpChanged;
+                pm.OnUnitAttackChanged += OnUnitAttackChanged;
                 pm.OnUnitDestroyed += OnUnitDestroyed;
             }
             var partnerManager = PartnerManager.Instance;
@@ -141,6 +144,7 @@ namespace CardBattle.UI
                 pm.OnSpellPlayed -= OnSpellPlayed;
                 pm.OnPlayerDataChanged -= OnPlayerDataChanged;
                 pm.OnUnitHpChanged -= OnUnitHpChanged;
+                pm.OnUnitAttackChanged -= OnUnitAttackChanged;
                 pm.OnUnitDestroyed -= OnUnitDestroyed;
             }
             var partnerManager = PartnerManager.Instance;
@@ -229,6 +233,14 @@ namespace CardBattle.UI
 
         /// <summary>ユニットの HP 変更時に表示を再同期する。</summary>
         private void OnUnitHpChanged(Unit unit)
+        {
+            if (unit == null) return;
+            var view = fieldVisualizerPlayer0?.GetViewByUnit(unit) ?? fieldVisualizerPlayer1?.GetViewByUnit(unit);
+            view?.RefreshFromUnit();
+        }
+
+        /// <summary>ユニットの攻撃力（表示）変更時に表示を再同期する。</summary>
+        private void OnUnitAttackChanged(Unit unit)
         {
             if (unit == null) return;
             var view = fieldVisualizerPlayer0?.GetViewByUnit(unit) ?? fieldVisualizerPlayer1?.GetViewByUnit(unit);
@@ -616,6 +628,50 @@ namespace CardBattle.UI
         public void HidePairingLine()
         {
             pairingLineView?.Hide();
+        }
+
+        /// <summary>
+        /// 効果の対象選択中に画面中央に「効果の対象を選んでください」用のプロンプトを表示する。
+        /// </summary>
+        public void ShowTargetSelectionPrompt()
+        {
+            if (targetSelectionPromptPrefab == null)
+            {
+                Debug.LogWarning("[GameVisualManager] targetSelectionPromptPrefab is not assigned. Effect target selection prompt will not be shown.");
+                return;
+            }
+
+            var parent = VideoEffectManager.Instance != null ? VideoEffectManager.Instance.uiParent : null;
+            if (parent == null)
+            {
+                var canvas = FindFirstObjectByType<Canvas>();
+                parent = canvas != null ? canvas.transform : null;
+            }
+            if (parent == null) return;
+
+            _targetSelectionPromptInstance = Instantiate(targetSelectionPromptPrefab, parent);
+            var rect = _targetSelectionPromptInstance.transform as RectTransform;
+            if (rect != null)
+            {
+                rect.anchorMin = new Vector2(0.5f, 0.5f);
+                rect.anchorMax = new Vector2(0.5f, 0.5f);
+                rect.pivot = new Vector2(0.5f, 0.5f);
+                rect.offsetMin = Vector2.zero;
+                rect.offsetMax = Vector2.zero;
+            }
+            _targetSelectionPromptInstance.SetActive(true);
+        }
+
+        /// <summary>
+        /// 対象選択プロンプトを非表示にする。
+        /// </summary>
+        public void HideTargetSelectionPrompt()
+        {
+            if (_targetSelectionPromptInstance != null)
+            {
+                Destroy(_targetSelectionPromptInstance);
+                _targetSelectionPromptInstance = null;
+            }
         }
     }
 }

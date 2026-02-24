@@ -6,10 +6,10 @@ using CardBattle.Core.Field;
 namespace CardBattle.ScriptableObjects
 {
     /// <summary>
-    /// 肉鎧のオーク。登場時ペア、ペアリング時+X/+X、ペアリング中攻撃できない、破壊時ペアを代わりに破壊。
-    /// 攻撃できない付与・戦闘破壊肩代わりは拡張が必要。ペアリング対象選択と+X/+Xは実装済み。
+    /// 肉鎧のオーク。登場時ペア、ペアリング時+X/+X、ペアリング中攻撃できない付与済み、破壊時ペアを代わりに破壊。
+    /// 戦闘破壊肩代わりは拡張が必要。ペアリング対象選択と+X/+Xは実装済み。
     /// </summary>
-    public class FleshArmorOgreUnitCard : UnitCardTemplateBase, IOnPairingEffect
+    public class FleshArmorOgreUnitCard : UnitCardTemplateBase, IOnPairingEffect, IGrantsCannotAttackToPairTarget
     {
         public FleshArmorOgreUnitCard()
         {
@@ -50,6 +50,8 @@ namespace CardBattle.ScriptableObjects
             var x = pairTargetUnitOrNull.Attack;
             sourceUnit.Attack += x;
             sourceUnit.HP += x;
+            pairTargetUnitOrNull.CanAttackUnit = false;
+            pairTargetUnitOrNull.CanAttackPlayer = false;
         }
     }
 }

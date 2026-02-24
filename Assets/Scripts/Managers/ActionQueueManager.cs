@@ -176,7 +176,7 @@ namespace CardBattle.Managers
                         var dialogue = DialogueManager.Instance;
                         dialogue?.OnCardPlayed(action.SourceCard);
                         NotifyActionAnimationCompleted();
-                    });
+                    }, action.InstanceIdForSummonedUnit);
                     return;
                 }
                 else
@@ -240,6 +240,7 @@ namespace CardBattle.Managers
 
                                 ApplySpellResolution(ownerId, opponentId, state, spellEffect, target,
                                     opponentUnitsBefore, myUnitsBefore);
+                                GameFlowManager.Instance?.RequestGameEnd(null);
                             }
                             playerManager.NotifySpellPlayed(ownerId, action.SourceCard);
                         }
@@ -303,6 +304,7 @@ namespace CardBattle.Managers
             var playerManager = PlayerManager.Instance;
             ApplySpellResolution(ctx.OwnerId, ctx.OpponentId, ctx.State, ctx.SpellEffect, target,
                 ctx.OpponentUnitsBefore, ctx.MyUnitsBefore);
+            GameFlowManager.Instance?.RequestGameEnd(null);
             var turnActionLog = TurnActionLog.Instance;
             var gameFlowManager = GameFlowManager.Instance;
             if (turnActionLog != null && gameFlowManager != null)

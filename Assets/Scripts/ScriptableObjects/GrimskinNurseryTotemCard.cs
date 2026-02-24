@@ -7,9 +7,9 @@ using UnityEngine;
 namespace CardBattle.ScriptableObjects
 {
     /// <summary>
-    /// グリンスキンの苗床。トーテム。発動時ペア・ターン開始時等の効果はトーテム用フック拡張が必要。
+    /// グリンスキンの苗床。トーテム。発動時ペア・ペアリング中攻撃できない付与済み。ターン開始時等の効果はトーテム用フック拡張が必要。
     /// </summary>
-    public class GrimskinNurseryTotemCard : TotemCardTemplateBase, IOnPairingEffect
+    public class GrimskinNurseryTotemCard : TotemCardTemplateBase, IOnPairingEffect, IGrantsCannotAttackToPairTarget
     {
         public GrimskinNurseryTotemCard()
         {
@@ -49,6 +49,11 @@ namespace CardBattle.ScriptableObjects
 
         public void Resolve(EffectTarget target, GameState state, Unit sourceUnit, Unit pairTargetUnitOrNull)
         {
+            if (pairTargetUnitOrNull != null)
+            {
+                pairTargetUnitOrNull.CanAttackUnit = false;
+                pairTargetUnitOrNull.CanAttackPlayer = false;
+            }
             // ペアリング時の見た目は UnitManager.ApplyPairingResult の StandingPicture 分岐で処理される
         }
     }

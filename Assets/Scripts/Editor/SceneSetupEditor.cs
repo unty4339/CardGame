@@ -127,7 +127,7 @@ namespace CardBattle.Editor
             var partnerZone0Rect = partnerZone0Go.AddComponent<RectTransform>();
             partnerZone0Rect.anchorMin = new Vector2(0.5f, 0.5f);
             partnerZone0Rect.anchorMax = new Vector2(0.5f, 0.5f);
-            partnerZone0Rect.anchoredPosition = new Vector2(262.4f, -207.3f);
+            partnerZone0Rect.anchoredPosition = new Vector2(262.4f, -190f);
             partnerZone0Rect.sizeDelta = new Vector2(48f, 90f);
 
             var partnerZone1Go = new GameObject("PartnerZoneAnchorPlayer1");
@@ -410,7 +410,7 @@ namespace CardBattle.Editor
             var go = new GameObject("EndTurnButton");
             go.transform.SetParent(parent, false);
             var rect = go.AddComponent<RectTransform>();
-            rect.anchorMin = new Vector2(0.82f, 0.02f);
+            rect.anchorMin = new Vector2(0.9f, 0.02f);
             rect.anchorMax = new Vector2(0.98f, 0.12f);
             rect.offsetMin = Vector2.zero;
             rect.offsetMax = Vector2.zero;

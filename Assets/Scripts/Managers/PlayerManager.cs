@@ -48,6 +48,11 @@ namespace CardBattle.Managers
         public event Action<Unit> OnUnitDestroyed;
 
         /// <summary>
+        /// ユニットの攻撃力（表示・実効）が変わったときに発火する。UnitView の表示更新用。
+        /// </summary>
+        public event Action<Unit> OnUnitAttackChanged;
+
+        /// <summary>
         /// 呪文を手札から使用したときに発火する。プレイヤーIDと使用したCardが渡される。手札UIの更新用。
         /// </summary>
         public event Action<int, Card> OnSpellPlayed;
@@ -94,6 +99,33 @@ namespace CardBattle.Managers
             OnUnitDestroyed?.Invoke(unit);
             if (unit != null && unit.IsPartner)
                 PartnerManager.Instance?.ReturnPartnerToZone(unit, unit.OwnerPlayerId);
+        }
+
+        /// <summary>
+        /// ユニットの攻撃力（表示）変更を通知する（ペアリング適用後などで呼ぶ）
+        /// </summary>
+        public void NotifyUnitAttackChanged(Unit unit)
+        {
+            OnUnitAttackChanged?.Invoke(unit);
+        }
+
+        /// <summary>
+        /// ユニットの実効攻撃力を返す。ICopiesAttackFromPairTarget の場合はペア対象の攻撃力（パートナーカードの場合は BaseAttack）を返す。
+        /// </summary>
+        public int GetEffectiveAttack(Unit unit)
+        {
+            if (unit == null) return 0;
+            if (unit.SourceCardTemplate is not ICopiesAttackFromPairTarget)
+                return unit.Attack;
+            if (unit.PairingTarget != null)
+                return unit.PairingTarget.Attack;
+            if (unit.PairingWithPartnerCard)
+            {
+                var data = GetPlayerData(unit.OwnerPlayerId);
+                var partnerAttack = data?.PartnerZone?.Partner?.BaseAttack;
+                return partnerAttack ?? unit.Attack;
+            }
+            return unit.Attack;
         }
 
         /// <summary>
@@ -252,8 +284,9 @@ namespace CardBattle.Managers
         /// <summary>
         /// プレイヤーIDとカードを受け取り、そのカードをプレイしてユニットを召喚する。成功時は true、不成立時は false を返す。
         /// 召喚時効果の解決（対象選択含む）が完了したときに onPlayComplete を呼ぶ。非同期の場合は効果解決後に呼ばれる。
+        /// preferredInstanceId が指定された場合、召喚ユニットにその InstanceId を付与する（AI シミュレーションとの統一用）。
         /// </summary>
-        public bool TryPlayCard(int playerId, Card card, Action onPlayComplete = null)
+        public bool TryPlayCard(int playerId, Card card, Action onPlayComplete = null, int? preferredInstanceId = null)
         {
             var data = GetPlayerData(playerId);
             if (data == null || card == null || card.Template == null) return false;
@@ -269,20 +302,25 @@ namespace CardBattle.Managers
             {
                 if (unit != null)
                 {
-                    // このターンに召喚したユニットに攻撃権を付与（速攻・神速で即攻撃可能にする）
+                    // このターンに召喚したユニットに攻撃権を付与（速攻・神速のみ即攻撃可能）
                     var gfm = GameFlowManager.Instance;
                     if (gfm != null && playerId == gfm.CurrentTurnPlayerId)
                     {
                         var ownerData = GetPlayerData(playerId);
-                        if (ownerData != null && ownerData.FieldZone.Units.Contains(unit))
-                            unit.CanAttack = true;
+                        if (ownerData != null && ownerData.FieldZone.Units.Contains(unit) && unit.Keywords != null)
+                        {
+                            if (unit.Keywords.Contains(KeywordAbility.Rush) || unit.Keywords.Contains(KeywordAbility.DivineSpeed))
+                                unit.CanAttackUnit = true;
+                            if (unit.Keywords.Contains(KeywordAbility.DivineSpeed))
+                                unit.CanAttackPlayer = true;
+                        }
                     }
                     OnUnitSummoned?.Invoke(playerId, card, unit);
                 }
                 onPlayComplete?.Invoke();
             }
 
-            var unit = UnitManager.Instance?.SpawnUnitFromCard(card, playerId, data.FieldZone, OnEffectsResolved);
+            var unit = UnitManager.Instance?.SpawnUnitFromCard(card, playerId, data.FieldZone, OnEffectsResolved, preferredInstanceId);
             return true;
         }
 
@@ -306,13 +344,13 @@ namespace CardBattle.Managers
             if (data == null || unit == null) return new List<GameAction>();
 
             var actions = new List<GameAction>();
-            if (unit.CanAttack)
+            var opponentId = playerId == 0 ? 1 : 0;
+            var opponentData = GetPlayerData(opponentId);
+            if (opponentData != null)
             {
-                var opponentId = playerId == 0 ? 1 : 0;
-                var opponentData = GetPlayerData(opponentId);
-                if (opponentData != null)
+                var battleManager = Battle.BattleManager.Instance;
+                if (unit.CanAttackUnit)
                 {
-                    var battleManager = Battle.BattleManager.Instance;
                     foreach (var target in opponentData.FieldZone.Units)
                     {
                         if (battleManager != null && battleManager.CanAttackUnit(unit, target, opponentData.FieldZone))
@@ -325,15 +363,15 @@ namespace CardBattle.Managers
                             });
                         }
                     }
-                    if (battleManager != null && battleManager.CanAttackPlayer(unit, opponentData.FieldZone))
+                }
+                if (unit.CanAttackPlayer && battleManager != null && battleManager.CanAttackPlayer(unit, opponentData.FieldZone))
+                {
+                    actions.Add(new GameAction
                     {
-                        actions.Add(new GameAction
-                        {
-                            ActionType = ActionType.Attack,
-                            SourceUnit = unit,
-                            Target = opponentId
-                        });
-                    }
+                        ActionType = ActionType.Attack,
+                        SourceUnit = unit,
+                        Target = opponentId
+                    });
                 }
             }
             return actions;
@@ -378,7 +416,7 @@ namespace CardBattle.Managers
         }
 
         /// <summary>
-        /// フィールドの全ユニットに攻撃権を付与する（トーテムは除く）
+        /// フィールドの全ユニットに攻撃権を付与する（トーテムは除く）。ペア対象に「攻撃できない」を付与する効果とペア中のユニットには付与しない。
         /// </summary>
         public void GrantAttackToAllUnits(int playerId)
         {
@@ -388,7 +426,11 @@ namespace CardBattle.Managers
             foreach (var unit in data.FieldZone.Units)
             {
                 if (unit.IsTotem) continue;
-                unit.CanAttack = true;
+                // ゴブリンの騎兵・肉鎧のオーク・グリンスキンの苗床などとペア中のユニットは攻撃権を付与しない
+                if (unit.PairingTarget?.SourceCardTemplate is IGrantsCannotAttackToPairTarget)
+                    continue;
+                unit.CanAttackUnit = true;
+                unit.CanAttackPlayer = true;
             }
         }
 
@@ -403,6 +445,36 @@ namespace CardBattle.Managers
             foreach (var unit in data.FieldZone.Units)
             {
                 unit.TurnsOnField++;
+            }
+        }
+
+        /// <summary>
+        /// ターン開始時トーテム効果を実行する（グリンスキンの苗床：ゴブリン2枚手札に加え、ペア対象とトーテムを破壊）。
+        /// </summary>
+        public void RunTurnStartTotemEffects(int turnPlayerId)
+        {
+            var data = GetPlayerData(turnPlayerId);
+            if (data == null) return;
+
+            var goblin = new GoblinUnitCard();
+            var totemsToProcess = data.FieldZone.Units
+                .Where(u => u.IsTotem && u.SourceCardTemplate is GrimskinNurseryTotemCard && u.PairingTarget != null)
+                .ToList();
+
+            foreach (var totem in totemsToProcess)
+            {
+                var pairTarget = totem.PairingTarget;
+                if (pairTarget == null) continue;
+
+                AddCardToHand(turnPlayerId, goblin);
+                AddCardToHand(turnPlayerId, goblin);
+
+                var pairTargetOwnerData = GetPlayerData(pairTarget.OwnerPlayerId);
+                UnpairIfNeededAndNotifyDestroyed(pairTarget);
+                pairTargetOwnerData?.FieldZone.Units.Remove(pairTarget);
+
+                UnpairIfNeededAndNotifyDestroyed(totem);
+                data.FieldZone.Units.Remove(totem);
             }
         }
 

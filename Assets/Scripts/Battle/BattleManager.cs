@@ -38,13 +38,7 @@ namespace CardBattle.Battle
         public bool CanAttackUnit(Unit attacker, Unit target, FieldZone opponentField)
         {
             if (target != null && target.IsTotem) return false;
-            if (!attacker.CanAttack) return false;
-
-            var canAttackThisTurn = attacker.TurnsOnField > 0 ||
-                attacker.Keywords.Contains(KeywordAbility.Rush) ||
-                attacker.Keywords.Contains(KeywordAbility.DivineSpeed);
-
-            return canAttackThisTurn;
+            return attacker.CanAttackUnit;
         }
 
         /// <summary>
@@ -52,23 +46,14 @@ namespace CardBattle.Battle
         /// </summary>
         public bool CanAttackPlayer(Unit attacker, FieldZone opponentField)
         {
-            if (!attacker.CanAttack) return false;
+            if (!attacker.CanAttackPlayer) return false;
 
-            var hasGuard = false;
             foreach (var unit in opponentField.Units)
             {
-                if (unit.Keywords.Contains(KeywordAbility.Guard))
-                {
-                    hasGuard = true;
-                    break;
-                }
+                if (unit.Keywords != null && unit.Keywords.Contains(KeywordAbility.Guard))
+                    return false;
             }
-            if (hasGuard) return false;
-
-            var canAttackPlayerThisTurn = attacker.TurnsOnField > 0 ||
-                attacker.Keywords.Contains(KeywordAbility.DivineSpeed);
-
-            return canAttackPlayerThisTurn;
+            return true;
         }
 
         /// <summary>
@@ -98,7 +83,8 @@ namespace CardBattle.Battle
                 _attackResolver.ResolvePlayerAttack(attacker, targetPlayerId);
             }
 
-            attacker.CanAttack = false;
+            attacker.CanAttackUnit = false;
+            attacker.CanAttackPlayer = false;
         }
     }
 }

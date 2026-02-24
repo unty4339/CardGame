@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using CardBattle.Core.Field;
 using CardBattle.Core.Partner;
 using CardBattle.Core.Player;
@@ -80,13 +81,15 @@ namespace CardBattle.Managers
                 HP = partner.BaseHP,
                 Attack = partner.BaseAttack,
                 TurnsOnField = 0,
-                CanAttack = false,
+                CanAttackUnit = false,
+                CanAttackPlayer = false,
                 Keywords = new System.Collections.Generic.List<Core.Enums.KeywordAbility>(partner.Keywords),
                 Effects = new System.Collections.Generic.List<Effect>(),
                 PairingTarget = null,
                 PairingWithPartnerCard = false,
                 OwnerPlayerId = playerId,
-                IsPartner = true
+                IsPartner = true,
+                DisplayName = partner.CardName
             };
 
             data.FieldZone.Units.Add(unit);
@@ -101,6 +104,36 @@ namespace CardBattle.Managers
                     u.PairingWithPartnerCard = false;
                     break;
                 }
+            }
+
+            // 登場時効果（未来航士、リュシア）: マナ2以上なら相手全体1ダメージ・破壊数分マナ回復（選択UIなし・常にこの効果）
+            if (data.CurrentMP >= 2)
+            {
+                data.CurrentMP -= 2;
+                int opponentId = 1 - playerId;
+                var oppData = playerManager.GetPlayerData(opponentId);
+                if (oppData?.FieldZone?.Units != null)
+                {
+                    foreach (var enemy in oppData.FieldZone.Units)
+                    {
+                        enemy.HP -= 1;
+                        if (enemy.HP > 0)
+                            playerManager.NotifyUnitHpChanged(enemy);
+                    }
+                    var toRemove = new List<Unit>();
+                    foreach (var enemy in oppData.FieldZone.Units)
+                    {
+                        if (enemy.HP <= 0)
+                            toRemove.Add(enemy);
+                    }
+                    foreach (var enemy in toRemove)
+                    {
+                        playerManager.UnpairIfNeededAndNotifyDestroyed(enemy);
+                        oppData.FieldZone.Units.Remove(enemy);
+                    }
+                    data.CurrentMP += toRemove.Count;
+                }
+                playerManager.NotifyPlayerDataChanged(playerId);
             }
 
             OnPartnerSummoned?.Invoke(playerId, unit);

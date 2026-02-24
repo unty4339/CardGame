@@ -13,10 +13,10 @@ namespace CardBattle.AI
         {
             var score = 0f;
 
-            score += state.MyHP * 10f;
-            score -= state.OpponentHP * 10f;
-            score += state.MyMP * 5f;
-            score -= state.OpponentMP * 5f;
+            score += state.MyHP * 5f;
+            score -= state.OpponentHP * 5f;
+            score += state.MyMP * 2f;
+            score -= state.OpponentMP * 2f;
 
             foreach (var unit in state.MyField.Units)
             {

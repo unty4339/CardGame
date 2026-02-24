@@ -14,7 +14,7 @@ namespace CardBattle.UI
     /// <summary>
     /// パートナーカード1枚の表示と、フィールドへのドラッグドロップによる召喚入力について責任を持つ
     /// </summary>
-    public class PartnerCardView : MonoBehaviour, IDragHandler, IBeginDragHandler, IEndDragHandler, IPointerClickHandler
+    public class PartnerCardView : MonoBehaviour, IDragHandler, IBeginDragHandler, IEndDragHandler, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
     {
         [SerializeField] private Image artwork;
         [SerializeField] private TextMeshProUGUI cost;
@@ -113,9 +113,20 @@ namespace CardBattle.UI
             EffectResolver.Instance?.ConfirmTarget(EffectTarget.PartnerCard(OwnerPlayerId));
         }
 
+        public void OnPointerEnter(PointerEventData eventData)
+        {
+            CardDescriptionPanel.ShowDescription(Partner?.Description);
+        }
+
+        public void OnPointerExit(PointerEventData eventData)
+        {
+            CardDescriptionPanel.HideDescription();
+        }
+
         public void OnBeginDrag(PointerEventData eventData)
         {
             if (!_draggable) return;
+            CardDescriptionPanel.HideDescription();
             _isDragging = true;
             if (canvasGroup != null) canvasGroup.blocksRaycasts = false;
         }

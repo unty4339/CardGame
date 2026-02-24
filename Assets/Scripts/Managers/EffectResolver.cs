@@ -121,6 +121,7 @@ namespace CardBattle.Managers
                 }
             }
 
+            GameVisualManager.Instance?.ShowTargetSelectionPrompt();
             return _currentTcs.Task;
         }
 
@@ -139,6 +140,7 @@ namespace CardBattle.Managers
         {
             Debug.Log($"[EffectResolver.ConfirmTarget] called, target.UnitInstanceId={target.UnitInstanceId?.ToString() ?? "null"}");
             ClearTargetSelectionHighlights();
+            GameVisualManager.Instance?.HideTargetSelectionPrompt();
             GameFlowManager.Instance?.ExitTargetSelection();
             _currentTcs?.TrySetResult(target);
             _currentTcs = null;
@@ -150,6 +152,7 @@ namespace CardBattle.Managers
         public void CancelTargetSelection()
         {
             ClearTargetSelectionHighlights();
+            GameVisualManager.Instance?.HideTargetSelectionPrompt();
             GameFlowManager.Instance?.ExitTargetSelection();
             _currentTcs?.TrySetResult(EffectTarget.None());
             _currentTcs = null;

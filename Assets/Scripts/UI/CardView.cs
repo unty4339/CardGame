@@ -126,19 +126,17 @@ namespace CardBattle.UI
         public void OnPointerEnter(PointerEventData eventData)
         {
             if (Card?.Template == null) return;
-            var desc = Card.Template.Description;
-            if (!string.IsNullOrEmpty(desc))
-                CardDescriptionPanel.Instance?.Show(desc);
+            CardDescriptionPanel.ShowDescription(Card.Template.Description);
         }
 
         public void OnPointerExit(PointerEventData eventData)
         {
-            CardDescriptionPanel.Instance?.Hide();
+            CardDescriptionPanel.HideDescription();
         }
 
         public void OnBeginDrag(PointerEventData eventData)
         {
-            CardDescriptionPanel.Instance?.Hide();
+            CardDescriptionPanel.HideDescription();
             _isDragging = true;
             if (canvasGroup != null) canvasGroup.blocksRaycasts = false;
         }

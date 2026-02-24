@@ -15,10 +15,13 @@ namespace CardBattle.ScriptableObjects
         [SerializeField] private int baseHP = 1;
         [SerializeField] private int baseAttack = 1;
         [SerializeField] private string cardName;
+        [SerializeField] [TextArea] private string description;
         [SerializeField] private List<KeywordAbility> keywords = new();
 
         public int Cost => cost;
         public string CardName => cardName;
+        /// <summary>カード説明文。マウスオーバー時に表示する。</summary>
+        public string Description => description ?? "";
         public int BaseHP => baseHP;
         public int BaseAttack => baseAttack;
         public IReadOnlyList<KeywordAbility> Keywords => keywords;
@@ -35,6 +38,7 @@ namespace CardBattle.ScriptableObjects
                 BaseHP = baseHP,
                 BaseAttack = baseAttack,
                 CardName = cardName,
+                Description = description ?? "",
                 Keywords = list
             };
         }

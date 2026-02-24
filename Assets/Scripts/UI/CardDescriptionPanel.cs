@@ -72,5 +72,21 @@ namespace CardBattle.UI
             if (panelRoot != null)
                 panelRoot.gameObject.SetActive(false);
         }
+
+        /// <summary>
+        /// 説明文を表示する（共通API）。空の場合は非表示。カード・ユニット・パートナー共通で使用する。
+        /// </summary>
+        public static void ShowDescription(string text)
+        {
+            Instance?.Show(text);
+        }
+
+        /// <summary>
+        /// 説明パネルを非表示にする（共通API）。ホバー終了時・ドラッグ開始時に呼ぶ。
+        /// </summary>
+        public static void HideDescription()
+        {
+            Instance?.Hide();
+        }
     }
 }

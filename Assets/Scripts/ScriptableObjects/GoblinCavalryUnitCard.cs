@@ -6,9 +6,9 @@ using CardBattle.Core.Field;
 namespace CardBattle.ScriptableObjects
 {
     /// <summary>
-    /// ゴブリンの騎兵。登場時ペア。ペアリング中：攻撃できない付与・攻撃力コピー・戦闘破壊時ペア肩代わりは拡張が必要。
+    /// ゴブリンの騎兵。登場時ペア。ペアリング中：攻撃できない付与済み。攻撃力コピー・戦闘破壊時ペア肩代わりは拡張が必要。
     /// </summary>
-    public class GoblinCavalryUnitCard : UnitCardTemplateBase, IOnPairingEffect
+    public class GoblinCavalryUnitCard : UnitCardTemplateBase, IOnPairingEffect, IGrantsCannotAttackToPairTarget, ICopiesAttackFromPairTarget
     {
         public GoblinCavalryUnitCard()
         {
@@ -45,7 +45,12 @@ namespace CardBattle.ScriptableObjects
 
         public void Resolve(EffectTarget target, GameState state, Unit sourceUnit, Unit pairTargetUnitOrNull)
         {
-            // ペアリングは呼び出し側で双方向に設定済み。攻撃できない付与・攻撃力コピー・戦闘破壊肩代わりは拡張で対応。
+            // ペアリングは呼び出し側で双方向に設定済み。攻撃力コピー・戦闘破壊肩代わりは拡張で対応。
+            if (pairTargetUnitOrNull != null)
+            {
+                pairTargetUnitOrNull.CanAttackUnit = false;
+                pairTargetUnitOrNull.CanAttackPlayer = false;
+            }
         }
     }
 }

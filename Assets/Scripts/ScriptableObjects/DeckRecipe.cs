@@ -29,7 +29,7 @@ namespace CardBattle.ScriptableObjects
 
             if (playerId == 0)
             {
-                // 自分のデッキ: パートナー（未来航路の番人、クーリア）以外の追加カードを3枚ずつ
+                // 自分のデッキ: パートナー（未来航士、リュシア）以外の追加カードを3枚ずつ
                 const int copies = 3;
                 entriesList.Add(new DeckRecipeEntry { Template = new GoblinUnitCard(), Count = copies });
                 entriesList.Add(new DeckRecipeEntry { Template = new GoblinSpearmanUnitCard(), Count = copies });
@@ -43,10 +43,18 @@ namespace CardBattle.ScriptableObjects
             }
             else
             {
-                // 相手のデッキ: 変更不要（従来どおり）
-                entriesList.Add(new DeckRecipeEntry { Template = new VanillaUnitCard(), Count = 10 });
-                entriesList.Add(new DeckRecipeEntry { Template = new DealOneDamageSpellCard(), Count = 10 });
-                entriesList.Add(new DeckRecipeEntry { Template = new DealOneDamageUnitCard(), Count = 10 });
+                // 相手のデッキ: 騎士団カードを各3枚ずつ（合計30枚）
+                const int copies = 3;
+                entriesList.Add(new DeckRecipeEntry { Template = new KnightSquireUnitCard(), Count = copies });
+                entriesList.Add(new DeckRecipeEntry { Template = new KnightSpearmanUnitCard(), Count = copies });
+                entriesList.Add(new DeckRecipeEntry { Template = new KnightShieldUnitCard(), Count = copies });
+                entriesList.Add(new DeckRecipeEntry { Template = new KnightArcherUnitCard(), Count = copies });
+                entriesList.Add(new DeckRecipeEntry { Template = new KnightCavalryUnitCard(), Count = copies });
+                entriesList.Add(new DeckRecipeEntry { Template = new KnightHeavyUnitCard(), Count = copies });
+                entriesList.Add(new DeckRecipeEntry { Template = new KnightCaptainUnitCard(), Count = copies });
+                entriesList.Add(new DeckRecipeEntry { Template = new KnightCommanderUnitCard(), Count = copies });
+                entriesList.Add(new DeckRecipeEntry { Template = new KnightOrderSpellCard(), Count = copies });
+                entriesList.Add(new DeckRecipeEntry { Template = new KnightChargeSpellCard(), Count = copies });
             }
 
             return deckRecipe;

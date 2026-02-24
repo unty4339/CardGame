@@ -19,5 +19,10 @@ namespace CardBattle.Core.Partner
         /// アートワーク用のカード名。null/空のときは画像を探さない。
         /// </summary>
         public string CardName { get; set; }
+
+        /// <summary>
+        /// カード説明文。マウスオーバー時に画面右側に表示する。
+        /// </summary>
+        public string Description { get; set; }
     }
 }

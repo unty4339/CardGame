@@ -41,8 +41,9 @@ namespace CardBattle.Managers
         /// <summary>
         /// カード、オーナーID、フィールドゾーンを受け取り、対応するユニットを登場させる。
         /// 召喚時効果で対象選択が必要な場合はコルーチンで非同期に解決し、完了時に onEffectsResolved(unit) を呼ぶ。
+        /// preferredInstanceId が指定された場合、その InstanceId でユニットを生成する（AI シミュレーションとの統一用）。
         /// </summary>
-        public Unit SpawnUnitFromCard(Card card, int ownerPlayerId, FieldZone fieldZone, Action<Unit> onEffectsResolved = null)
+        public Unit SpawnUnitFromCard(Card card, int ownerPlayerId, FieldZone fieldZone, Action<Unit> onEffectsResolved = null, int? preferredInstanceId = null)
         {
             if (card == null)
                 throw new ArgumentNullException(nameof(card));
@@ -57,20 +58,41 @@ namespace CardBattle.Managers
                 throw new ArgumentException("Unit card template is not UnitCardTemplateBase.", nameof(card));
 
             var (hp, attack, keywords) = unitBase.GetUnitStats();
-            var unit = new Unit
+            Unit unit;
+            if (preferredInstanceId.HasValue)
             {
-                HP = hp,
-                Attack = attack,
-                TurnsOnField = 0,
-                CanAttack = false,
-                Keywords = new System.Collections.Generic.List<KeywordAbility>(keywords),
-                Effects = new System.Collections.Generic.List<Effect>(),
-                PairingTarget = null,
-                PairingWithPartnerCard = false,
-                OwnerPlayerId = ownerPlayerId,
-                IsPartner = false,
-                SourceCardTemplate = card.Template
-            };
+                unit = Unit.CreateWithInstanceId(preferredInstanceId.Value);
+                unit.HP = hp;
+                unit.Attack = attack;
+                unit.TurnsOnField = 0;
+                unit.CanAttackUnit = false;
+                unit.CanAttackPlayer = false;
+                unit.Keywords = new System.Collections.Generic.List<KeywordAbility>(keywords);
+                unit.Effects = new System.Collections.Generic.List<Effect>();
+                unit.PairingTarget = null;
+                unit.PairingWithPartnerCard = false;
+                unit.OwnerPlayerId = ownerPlayerId;
+                unit.IsPartner = false;
+                unit.SourceCardTemplate = card.Template;
+            }
+            else
+            {
+                unit = new Unit
+                {
+                    HP = hp,
+                    Attack = attack,
+                    TurnsOnField = 0,
+                    CanAttackUnit = false,
+                    CanAttackPlayer = false,
+                    Keywords = new System.Collections.Generic.List<KeywordAbility>(keywords),
+                    Effects = new System.Collections.Generic.List<Effect>(),
+                    PairingTarget = null,
+                    PairingWithPartnerCard = false,
+                    OwnerPlayerId = ownerPlayerId,
+                    IsPartner = false,
+                    SourceCardTemplate = card.Template
+                };
+            }
 
             fieldZone.Units.Add(unit);
 
@@ -122,6 +144,7 @@ namespace CardBattle.Managers
                             if (target.Kind == EffectTargetKind.Unit && target.UnitInstanceId != null)
                                 gvm?.PlayEffectAtUnit(opponentId, target.UnitInstanceId.Value);
                             effect.Resolve(target, state, unit);
+                            NotifyUnitHpChangedIfStillOnField(playerManager, state, target);
                         }
 
                         myData.HP = state.MyHP;
@@ -228,6 +251,19 @@ namespace CardBattle.Managers
             onEffectsResolved?.Invoke(unit);
         }
 
+        /// <summary>
+        /// 召喚時効果でユニット対象にダメージ等を適用した後、そのユニットがまだ場に残っていれば HP 表示更新を通知する。
+        /// </summary>
+        private static void NotifyUnitHpChangedIfStillOnField(PlayerManager playerManager, GameState state, EffectTarget target)
+        {
+            if (playerManager == null || state?.MyField?.Units == null || state?.OpponentField?.Units == null) return;
+            if (target.Kind != EffectTargetKind.Unit || target.UnitInstanceId == null) return;
+            var u = state.MyField.Units.Find(x => x.InstanceId == target.UnitInstanceId.Value)
+                ?? state.OpponentField.Units.Find(x => x.InstanceId == target.UnitInstanceId.Value);
+            if (u != null)
+                playerManager.NotifyUnitHpChanged(u);
+        }
+
         private IEnumerator ResolveSummonEffectsCoroutine(
             List<Core.Effects.IOnSummonEffect> onSummonEffects,
             Unit unit,
@@ -268,6 +304,7 @@ namespace CardBattle.Managers
                 if (target.Kind == EffectTargetKind.Unit && target.UnitInstanceId != null)
                     gvm?.PlayEffectAtUnit(opponentId, target.UnitInstanceId.Value);
                 effect.Resolve(target, state, unit);
+                NotifyUnitHpChangedIfStillOnField(playerManager, state, target);
             }
 
             var myData = playerManager.GetPlayerData(ownerPlayerId);
@@ -374,20 +411,32 @@ namespace CardBattle.Managers
                 unit.PairingWithPartnerCard = true;
             }
 
+            var isPartnerChosenAsTarget = (target.Kind == EffectTargetKind.PartnerCard && target.PlayerId == 0)
+                || (pairTargetUnit != null && pairTargetUnit.IsPartner && pairTargetUnit.OwnerPlayerId == 0);
+            if (isPartnerChosenAsTarget)
+                DialogueManager.Instance?.OnPartnerChosenAsPairingTarget();
+
             if (effects != null)
             {
                 foreach (var effect in effects)
                     effect.Resolve(target, state, unit, pairTargetUnit);
             }
 
-            if (target.Kind == EffectTargetKind.PartnerCard && unit.SourceCardTemplate != null)
+            if (unit.SourceCardTemplate is ICopiesAttackFromPairTarget)
+                PlayerManager.Instance?.NotifyUnitAttackChanged(unit);
+
+            if (unit.SourceCardTemplate != null)
             {
                 var template = unit.SourceCardTemplate;
-                if (template is GoblinCavalryUnitCard)
-                    StandingPictureManager.Instance?.SetStandingPicture(StandingPictureType.Riding);
-                else if (template is FleshArmorOgreUnitCard)
-                    StandingPictureManager.Instance?.SetStandingPicture(StandingPictureType.Restraint);
-                else if (template is GrimskinNurseryTotemCard)
+                if (isPartnerChosenAsTarget)
+                {
+                    if (template is GoblinCavalryUnitCard)
+                        StandingPictureManager.Instance?.SetStandingPicture(StandingPictureType.Riding);
+                    else if (template is FleshArmorOgreUnitCard)
+                        StandingPictureManager.Instance?.SetStandingPicture(StandingPictureType.Restraint);
+                }
+                // グリンスキンの苗床はペア対象がパートナーカードのときだけ立ち絵を Submission にする
+                if (template is GrimskinNurseryTotemCard && target.Kind == EffectTargetKind.PartnerCard)
                     StandingPictureManager.Instance?.SetStandingPicture(StandingPictureType.Submission);
             }
         }
@@ -444,6 +493,7 @@ namespace CardBattle.Managers
 
             var resolver = EffectResolver.Instance;
             var needTargetSelection = resolver != null && ownerId == 0 && choices.Count > 1;
+            Debug.Log($"[RunTotemOnPlayPairing] choices.Count={choices?.Count ?? 0}, needTargetSelection={needTargetSelection}");
 
             if (needTargetSelection)
             {
@@ -467,6 +517,7 @@ namespace CardBattle.Managers
             IList<EffectTarget> choices,
             Action onComplete)
         {
+            yield return null;
             var resolver = EffectResolver.Instance;
             var task = resolver.RequestTargetAsync(choices, ownerId);
             while (!task.IsCompleted)
@@ -498,7 +549,8 @@ namespace CardBattle.Managers
                 HP = 0,
                 Attack = 0,
                 TurnsOnField = 0,
-                CanAttack = false,
+                CanAttackUnit = false,
+                CanAttackPlayer = false,
                 OwnerPlayerId = ownerPlayerId,
                 SourceCardTemplate = card.Template,
                 IsTotem = true

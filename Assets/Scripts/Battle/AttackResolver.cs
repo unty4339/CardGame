@@ -33,7 +33,7 @@ namespace CardBattle.Battle
                 damageReceiver = defender;
             }
 
-            damageReceiver.HP -= attacker.Attack;
+            damageReceiver.HP -= playerManager.GetEffectiveAttack(attacker);
             attacker.HP -= defender.Attack;
 
             playerManager?.NotifyUnitHpChanged(attacker);
@@ -67,12 +67,12 @@ namespace CardBattle.Battle
             if (targetData == null)
                 throw new InvalidOperationException($"Target player data not found. targetPlayerId={targetPlayerId}");
 
-            targetData.HP -= attacker.Attack;
+            targetData.HP -= playerManager.GetEffectiveAttack(attacker);
             playerManager.NotifyPlayerDataChanged(targetPlayerId);
 
             if (targetData.HP <= 0)
             {
-                // TODO: 勝利判定へ遷移（GameFlowManager.CheckGameEnd）
+                GameFlowManager.Instance?.RequestGameEnd(1 - targetPlayerId);
             }
         }
     }
