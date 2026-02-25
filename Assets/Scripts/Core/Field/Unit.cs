@@ -50,6 +50,15 @@ namespace CardBattle.Core.Field
         /// </summary>
         public bool PairingWithPartnerCard { get; set; }
 
+        /// <summary>いずれかのペア状態（ユニット同士 or パートナーカード）にあるとき true。</summary>
+        public bool IsPaired => PairingTarget != null || PairingWithPartnerCard;
+
+        /// <summary>ペア対象がフィールド上のユニットのとき true。</summary>
+        public bool IsPairedWithUnit => PairingTarget != null;
+
+        /// <summary>ペア対象ユニット。パートナーカードとペアのときは null。</summary>
+        public Unit GetPairTargetUnitOrNull() => PairingTarget;
+
         /// <summary>
         /// ペアリングで加算した攻撃力。解除時に還元するために保持する。
         /// </summary>

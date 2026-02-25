@@ -247,7 +247,7 @@ namespace CardBattle.Managers
             else
                 target = choices[0];
 
-            ApplyPairingResult(unit, target, onPairingEffects, state, myData, oppData);
+            PairingService.ApplyPairingResult(unit, target, onPairingEffects, state, myData, oppData);
             onEffectsResolved?.Invoke(unit);
         }
 
@@ -382,64 +382,8 @@ namespace CardBattle.Managers
                 target = choices[0];
             }
 
-            ApplyPairingResult(unit, target, onPairingEffects, state, myData, oppData);
+            PairingService.ApplyPairingResult(unit, target, onPairingEffects, state, myData, oppData);
             onEffectsResolved?.Invoke(unit);
-        }
-
-        private static void ApplyPairingResult(
-            Unit unit,
-            EffectTarget target,
-            IReadOnlyList<IOnPairingEffect> effects,
-            GameState state,
-            PlayerData myData,
-            PlayerData oppData)
-        {
-            Unit pairTargetUnit = null;
-            if (target.Kind == EffectTargetKind.Unit && target.UnitInstanceId != null)
-            {
-                var b = myData.FieldZone.Units.Find(u => u.InstanceId == target.UnitInstanceId.Value)
-                    ?? oppData.FieldZone.Units.Find(u => u.InstanceId == target.UnitInstanceId.Value);
-                if (b != null)
-                {
-                    unit.PairingTarget = b;
-                    b.PairingTarget = unit;
-                    pairTargetUnit = b;
-                }
-            }
-            else if (target.Kind == EffectTargetKind.PartnerCard && target.PlayerId is int ownerId)
-            {
-                unit.PairingWithPartnerCard = true;
-                GameVisualManager.Instance?.UpdatePartnerCardDraggable(ownerId);
-            }
-
-            var isPartnerChosenAsTarget = (target.Kind == EffectTargetKind.PartnerCard && target.PlayerId == 0)
-                || (pairTargetUnit != null && pairTargetUnit.IsPartner && pairTargetUnit.OwnerPlayerId == 0);
-            if (isPartnerChosenAsTarget)
-                DialogueManager.Instance?.OnPartnerChosenAsPairingTarget();
-
-            if (effects != null)
-            {
-                foreach (var effect in effects)
-                    effect.Resolve(target, state, unit, pairTargetUnit);
-            }
-
-            if (unit.SourceCardTemplate is ICopiesAttackFromPairTarget)
-                PlayerManager.Instance?.NotifyUnitAttackChanged(unit);
-
-            if (unit.SourceCardTemplate != null)
-            {
-                var template = unit.SourceCardTemplate;
-                if (isPartnerChosenAsTarget)
-                {
-                    if (template is GoblinCavalryUnitCard)
-                        StandingPictureManager.Instance?.SetStandingPicture(StandingPictureType.Riding);
-                    else if (template is FleshArmorOgreUnitCard)
-                        StandingPictureManager.Instance?.SetStandingPicture(StandingPictureType.Restraint);
-                }
-                // グリンスキンの苗床はペア対象がパートナーカードのときだけ立ち絵を Submission にする
-                if (template is GrimskinNurseryTotemCard && target.Kind == EffectTargetKind.PartnerCard)
-                    StandingPictureManager.Instance?.SetStandingPicture(StandingPictureType.Submission);
-            }
         }
 
         /// <summary>
@@ -503,7 +447,7 @@ namespace CardBattle.Managers
             }
 
             var target = choices[0];
-            ApplyPairingResult(totemUnit, target, new List<IOnPairingEffect> { effect }, state, myData, oppData);
+            PairingService.ApplyPairingResult(totemUnit, target, new List<IOnPairingEffect> { effect }, state, myData, oppData);
             onComplete();
         }
 
@@ -524,7 +468,7 @@ namespace CardBattle.Managers
             while (!task.IsCompleted)
                 yield return null;
             var target = task.GetAwaiter().GetResult();
-            ApplyPairingResult(totemUnit, target, new List<IOnPairingEffect> { effect }, state, myData, oppData);
+            PairingService.ApplyPairingResult(totemUnit, target, new List<IOnPairingEffect> { effect }, state, myData, oppData);
             onComplete();
         }
 

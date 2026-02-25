@@ -157,8 +157,8 @@ namespace CardBattle.Managers
             if (unit == null) return 0;
             if (unit.SourceCardTemplate is not ICopiesAttackFromPairTarget)
                 return unit.Attack;
-            if (unit.PairingTarget != null)
-                return unit.PairingTarget.Attack;
+            if (unit.IsPairedWithUnit)
+                return unit.GetPairTargetUnitOrNull().Attack;
             if (unit.PairingWithPartnerCard)
             {
                 var data = GetPlayerData(unit.OwnerPlayerId);
@@ -171,97 +171,23 @@ namespace CardBattle.Managers
         /// <summary>
         /// ペアリングで加算した攻撃・体力ボーナスを還元し、保存値をクリアする。
         /// </summary>
-        public void ApplyAndClearPairingBonus(Unit unit)
-        {
-            if (unit == null) return;
-            AddUnitAttack(unit, -unit.PairingAttackBonus);
-            AddUnitHp(unit, -unit.PairingHpBonus);
-            unit.PairingAttackBonus = 0;
-            unit.PairingHpBonus = 0;
-        }
+        public void ApplyAndClearPairingBonus(Unit unit) => PairingService.ApplyAndClearPairingBonus(unit);
 
         /// <summary>
         /// パートナーカードとのペアリングのみ解除する（破壊通知は行わない）。身代わり効果でパートナーカードをペア対象にしていた場合に使用する。
         /// </summary>
-        public void UnpairPartnerCardOnly(Unit unit)
-        {
-            if (unit == null || !unit.PairingWithPartnerCard)
-                return;
-
-            ApplyAndClearPairingBonus(unit);
-
-            var state = BuildGameStateForPlayer(unit.OwnerPlayerId);
-            var template = unit.SourceCardTemplate as UnitCardTemplateBase;
-            if (template != null)
-            {
-                foreach (var effect in template.GetOnUnpairEffects())
-                    effect.Resolve(unit, state, unit);
-            }
-            unit.PairingWithPartnerCard = false;
-            GameVisualManager.Instance?.UpdatePartnerCardDraggable(unit.OwnerPlayerId);
-        }
+        public void UnpairPartnerCardOnly(Unit unit) => PairingService.UnpairPartnerCardOnly(unit);
 
         /// <summary>
         /// ユニットが場を離れる前にペアリング解除（OnUnpair 発動・参照クリア）を行い、続けて破壊通知する。
         /// 呼び出し元はこのメソッドの後に Units.Remove(unit) を行うこと。
         /// </summary>
-        public void UnpairIfNeededAndNotifyDestroyed(Unit unit)
-        {
-            if (unit == null)
-            {
-                NotifyUnitDestroyed(unit);
-                return;
-            }
+        public void UnpairIfNeededAndNotifyDestroyed(Unit unit) => PairingService.UnpairAndNotifyDestroyed(unit);
 
-            var needPartnerSweating = (unit.IsPartner && unit.OwnerPlayerId == 0)
-                || (unit.PairingTarget != null && unit.PairingTarget.IsPartner && unit.PairingTarget.OwnerPlayerId == 0)
-                || (unit.PairingWithPartnerCard && unit.OwnerPlayerId == 0);
-
-            if (unit.PairingWithPartnerCard)
-            {
-                ApplyAndClearPairingBonus(unit);
-                var state = BuildGameStateForPlayer(unit.OwnerPlayerId);
-                var template = unit.SourceCardTemplate as UnitCardTemplateBase;
-                if (template != null)
-                {
-                    foreach (var effect in template.GetOnUnpairEffects())
-                        effect.Resolve(unit, state, unit);
-                }
-                unit.PairingWithPartnerCard = false;
-                GameVisualManager.Instance?.UpdatePartnerCardDraggable(unit.OwnerPlayerId);
-            }
-            else if (unit.PairingTarget != null)
-            {
-                var partner = unit.PairingTarget;
-                ApplyAndClearPairingBonus(unit);
-                ApplyAndClearPairingBonus(partner);
-                var state = BuildGameStateForPlayer(unit.OwnerPlayerId);
-
-                var partnerTemplate = partner.SourceCardTemplate as UnitCardTemplateBase;
-                if (partnerTemplate != null)
-                {
-                    foreach (var effect in partnerTemplate.GetOnUnpairEffects())
-                        effect.Resolve(unit, state, partner);
-                }
-
-                var myTemplate = unit.SourceCardTemplate as UnitCardTemplateBase;
-                if (myTemplate != null)
-                {
-                    foreach (var effect in myTemplate.GetOnUnpairEffects())
-                        effect.Resolve(unit, state, unit);
-                }
-
-                unit.PairingTarget = null;
-                partner.PairingTarget = null;
-            }
-
-            if (needPartnerSweating)
-                StandingPictureManager.Instance?.SetStandingPicture(StandingPictureType.Sweating);
-
-            NotifyUnitDestroyed(unit);
-        }
-
-        private GameState BuildGameStateForPlayer(int myPlayerId)
+        /// <summary>
+        /// 指定プレイヤー視点の GameState を組み立てる。ペアリング解除時の OnUnpair などで使用する。
+        /// </summary>
+        public GameState GetGameStateForPlayer(int myPlayerId)
         {
             var myData = GetPlayerData(myPlayerId);
             var oppId = myPlayerId == 0 ? 1 : 0;
@@ -504,7 +430,7 @@ namespace CardBattle.Managers
             {
                 if (unit.IsTotem) continue;
                 // ゴブリンの騎兵・肉鎧のオーク・グリンスキンの苗床などとペア中のユニットは攻撃権を付与しない
-                if (unit.PairingTarget?.SourceCardTemplate is IGrantsCannotAttackToPairTarget)
+                if (unit.GetPairTargetUnitOrNull()?.SourceCardTemplate is IGrantsCannotAttackToPairTarget)
                     continue;
                 unit.CanAttackUnit = true;
                 unit.CanAttackPlayer = true;
@@ -535,12 +461,12 @@ namespace CardBattle.Managers
 
             var goblin = new GoblinUnitCard();
             var totemsToProcess = data.FieldZone.Units
-                .Where(u => u.IsTotem && u.SourceCardTemplate is GrimskinNurseryTotemCard && u.PairingTarget != null)
+                .Where(u => u.IsTotem && u.SourceCardTemplate is GrimskinNurseryTotemCard && u.IsPairedWithUnit)
                 .ToList();
 
             foreach (var totem in totemsToProcess)
             {
-                var pairTarget = totem.PairingTarget;
+                var pairTarget = totem.GetPairTargetUnitOrNull();
                 if (pairTarget == null) continue;
 
                 AddCardToHand(turnPlayerId, goblin);

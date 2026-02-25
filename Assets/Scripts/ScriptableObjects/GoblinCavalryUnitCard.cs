@@ -1,14 +1,16 @@
 using System.Collections.Generic;
 using CardBattle.AI;
 using CardBattle.Core.Effects;
+using CardBattle.Core.Enums;
 using CardBattle.Core.Field;
+using CardBattle.UI;
 
 namespace CardBattle.ScriptableObjects
 {
     /// <summary>
     /// ゴブリンの騎兵。登場時ペア。ペアリング中：攻撃できない付与済み、攻撃力コピー、戦闘時身代わり（ペア先破壊 or ペア解除でダメージ無効）。
     /// </summary>
-    public class GoblinCavalryUnitCard : UnitCardTemplateBase, IOnPairingEffect, IGrantsCannotAttackToPairTarget, ICopiesAttackFromPairTarget, IWhilePairedSubstitution
+    public class GoblinCavalryUnitCard : UnitCardTemplateBase, IOnPairingEffect, IGrantsCannotAttackToPairTarget, ICopiesAttackFromPairTarget, IWhilePairedSubstitution, IPairingStandingPicture
     {
         public GoblinCavalryUnitCard()
         {
@@ -51,6 +53,13 @@ namespace CardBattle.ScriptableObjects
                 pairTargetUnitOrNull.CanAttackUnit = false;
                 pairTargetUnitOrNull.CanAttackPlayer = false;
             }
+        }
+
+        public string GetStandingPictureTypeWhenPartnerChosen(EffectTarget target, Unit pairTargetUnitOrNull)
+        {
+            var isPartnerChosen = (target.Kind == EffectTargetKind.PartnerCard && target.PlayerId == 0)
+                || (pairTargetUnitOrNull != null && pairTargetUnitOrNull.IsPartner && pairTargetUnitOrNull.OwnerPlayerId == 0);
+            return isPartnerChosen ? StandingPictureType.Riding : null;
         }
     }
 }

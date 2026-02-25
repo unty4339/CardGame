@@ -83,10 +83,11 @@ namespace CardBattle.UI
 
         public void OnPointerEnter(PointerEventData eventData)
         {
-            if (Unit != null && Unit.PairingTarget != null)
+            if (Unit != null && Unit.IsPairedWithUnit)
             {
                 var gvm = GameVisualManager.Instance;
-                var otherView = gvm?.GetUnitViewByInstanceId(Unit.PairingTarget.OwnerPlayerId, Unit.PairingTarget.InstanceId);
+                var pairTarget = Unit.GetPairTargetUnitOrNull();
+                var otherView = gvm?.GetUnitViewByInstanceId(pairTarget.OwnerPlayerId, pairTarget.InstanceId);
                 if (otherView != null)
                     gvm?.ShowPairingLine(this, otherView);
             }

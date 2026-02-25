@@ -21,7 +21,7 @@ namespace CardBattle.Battle
             var playerManager = PlayerManager.Instance;
 
             var defenderSubstitutionActive = defender.SourceCardTemplate is IWhilePairedSubstitution
-                && (defender.PairingTarget != null || defender.PairingWithPartnerCard);
+                && defender.IsPaired;
 
             if (defenderSubstitutionActive)
             {
@@ -31,7 +31,7 @@ namespace CardBattle.Battle
                 }
                 else
                 {
-                    var pairTarget = defender.PairingTarget;
+                    var pairTarget = defender.GetPairTargetUnitOrNull();
                     playerManager?.UnpairIfNeededAndNotifyDestroyed(pairTarget);
                     defenderField.Units.Remove(pairTarget);
                 }
@@ -47,7 +47,7 @@ namespace CardBattle.Battle
             }
 
             var attackerSubstitutionActive = attacker.SourceCardTemplate is IWhilePairedSubstitution
-                && (attacker.PairingTarget != null || attacker.PairingWithPartnerCard);
+                && attacker.IsPaired;
 
             if (attackerSubstitutionActive)
             {
@@ -57,7 +57,7 @@ namespace CardBattle.Battle
                 }
                 else
                 {
-                    var pairTarget = attacker.PairingTarget;
+                    var pairTarget = attacker.GetPairTargetUnitOrNull();
                     playerManager?.UnpairIfNeededAndNotifyDestroyed(pairTarget);
                     var fieldForPair = pairTarget.OwnerPlayerId == attacker.OwnerPlayerId ? attackerField : defenderField;
                     fieldForPair.Units.Remove(pairTarget);

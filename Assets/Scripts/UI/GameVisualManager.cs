@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using CardBattle.AI;
 using CardBattle.Core.Deck;
 using CardBattle.Core.Field;
 using CardBattle.Core.Partner;
@@ -311,14 +312,7 @@ namespace CardBattle.UI
             view.transform.localPosition = Vector3.zero;
             view.Initialize(data.PartnerZone.Partner);
             view.OwnerPlayerId = playerId;
-            var partnerInPairing = false;
-            if (data.FieldZone?.Units != null)
-            {
-                foreach (var u in data.FieldZone.Units)
-                {
-                    if (u.PairingWithPartnerCard) { partnerInPairing = true; break; }
-                }
-            }
+            var partnerInPairing = GameState.IsPartnerCardInPairing(data.FieldZone);
             view.SetDraggable(!data.PartnerZone.IsPartnerOnField && !partnerInPairing);
             if (fieldV != null && fieldV.FieldAreaRect != null)
                 view.SetFieldAreaRect(fieldV.FieldAreaRect);
@@ -341,14 +335,7 @@ namespace CardBattle.UI
             if (data?.PartnerZone?.Partner == null) return;
             var view = playerId == 0 ? _partnerCardViewPlayer0 : _partnerCardViewPlayer1;
             if (view == null) return;
-            var partnerInPairing = false;
-            if (data.FieldZone?.Units != null)
-            {
-                foreach (var u in data.FieldZone.Units)
-                {
-                    if (u.PairingWithPartnerCard) { partnerInPairing = true; break; }
-                }
-            }
+            var partnerInPairing = GameState.IsPartnerCardInPairing(data.FieldZone);
             view.SetDraggable(!data.PartnerZone.IsPartnerOnField && !partnerInPairing);
         }
 

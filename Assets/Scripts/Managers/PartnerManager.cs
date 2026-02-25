@@ -100,16 +100,7 @@ namespace CardBattle.Managers
             data.FieldZone.Units.Add(unit);
             data.PartnerZone.IsPartnerOnField = true;
 
-            foreach (var u in data.FieldZone.Units)
-            {
-                if (u != unit && u.PairingWithPartnerCard)
-                {
-                    u.PairingTarget = unit;
-                    unit.PairingTarget = u;
-                    u.PairingWithPartnerCard = false;
-                    break;
-                }
-            }
+            PairingService.MigratePartnerCardPairingToUnit(unit, data.FieldZone);
 
             // 登場時効果（未来航士、リュシア）: マナ2以上なら相手全体1ダメージ・破壊数分マナ回復（選択UIなし・常にこの効果）
             if (data.CurrentMP >= 2)

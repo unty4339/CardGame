@@ -1,7 +1,9 @@
 using System.Collections.Generic;
 using CardBattle.AI;
 using CardBattle.Core.Effects;
+using CardBattle.Core.Enums;
 using CardBattle.Core.Field;
+using CardBattle.UI;
 using UnityEngine;
 
 namespace CardBattle.ScriptableObjects
@@ -9,7 +11,7 @@ namespace CardBattle.ScriptableObjects
     /// <summary>
     /// グリンスキンの苗床。トーテム。発動時ペア・ペアリング中攻撃できない付与済み。ターン開始時等の効果はトーテム用フック拡張が必要。
     /// </summary>
-    public class GrimskinNurseryTotemCard : TotemCardTemplateBase, IOnPairingEffect, IGrantsCannotAttackToPairTarget
+    public class GrimskinNurseryTotemCard : TotemCardTemplateBase, IOnPairingEffect, IGrantsCannotAttackToPairTarget, IPairingStandingPicture
     {
         public GrimskinNurseryTotemCard()
         {
@@ -54,7 +56,11 @@ namespace CardBattle.ScriptableObjects
                 pairTargetUnitOrNull.CanAttackUnit = false;
                 pairTargetUnitOrNull.CanAttackPlayer = false;
             }
-            // ペアリング時の見た目は UnitManager.ApplyPairingResult の StandingPicture 分岐で処理される
+        }
+
+        public string GetStandingPictureTypeWhenPartnerChosen(EffectTarget target, Unit pairTargetUnitOrNull)
+        {
+            return target.Kind == EffectTargetKind.PartnerCard ? StandingPictureType.Submission : null;
         }
     }
 }

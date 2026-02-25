@@ -1,15 +1,17 @@
 using System.Collections.Generic;
 using CardBattle.AI;
 using CardBattle.Core.Effects;
+using CardBattle.Core.Enums;
 using CardBattle.Core.Field;
 using CardBattle.Managers;
+using CardBattle.UI;
 
 namespace CardBattle.ScriptableObjects
 {
     /// <summary>
     /// 肉鎧のオーク。登場時ペア、ペアリング時+X/+X、ペアリング中攻撃できない付与済み、戦闘時身代わり（ペア先破壊 or ペア解除でダメージ無効）。
     /// </summary>
-    public class FleshArmorOgreUnitCard : UnitCardTemplateBase, IOnPairingEffect, IGrantsCannotAttackToPairTarget, IWhilePairedSubstitution
+    public class FleshArmorOgreUnitCard : UnitCardTemplateBase, IOnPairingEffect, IGrantsCannotAttackToPairTarget, IWhilePairedSubstitution, IPairingStandingPicture
     {
         public FleshArmorOgreUnitCard()
         {
@@ -54,6 +56,13 @@ namespace CardBattle.ScriptableObjects
             sourceUnit.PairingHpBonus = x;
             pairTargetUnitOrNull.CanAttackUnit = false;
             pairTargetUnitOrNull.CanAttackPlayer = false;
+        }
+
+        public string GetStandingPictureTypeWhenPartnerChosen(EffectTarget target, Unit pairTargetUnitOrNull)
+        {
+            var isPartnerChosen = (target.Kind == EffectTargetKind.PartnerCard && target.PlayerId == 0)
+                || (pairTargetUnitOrNull != null && pairTargetUnitOrNull.IsPartner && pairTargetUnitOrNull.OwnerPlayerId == 0);
+            return isPartnerChosen ? StandingPictureType.Restraint : null;
         }
     }
 }

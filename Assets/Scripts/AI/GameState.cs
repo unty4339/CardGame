@@ -43,10 +43,16 @@ namespace CardBattle.AI
         /// 自プレイヤーのパートナーカードが既にいずれかのユニットのペアリング対象になっている場合に true。
         /// プレイ時ペアリングでパートナーカードを候補に出すかどうかの判定に使用する。
         /// </summary>
-        public bool IsPartnerCardAlreadyPairingTarget()
+        public bool IsPartnerCardAlreadyPairingTarget() => IsPartnerCardInPairing(MyField);
+
+        /// <summary>
+        /// 指定フィールドのいずれかのユニットがパートナーカードとペア中なら true。
+        /// パートナーカードのドラッグ可否判定などに使用する。
+        /// </summary>
+        public static bool IsPartnerCardInPairing(FieldZone field)
         {
-            if (MyField?.Units == null) return false;
-            foreach (var u in MyField.Units)
+            if (field?.Units == null) return false;
+            foreach (var u in field.Units)
                 if (u.PairingWithPartnerCard) return true;
             return false;
         }
