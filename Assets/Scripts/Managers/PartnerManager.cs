@@ -116,6 +116,7 @@ namespace CardBattle.Managers
                 {
                     foreach (var enemy in oppData.FieldZone.Units)
                     {
+                        if (enemy.IsTotem) continue;
                         enemy.HP -= 1;
                         if (enemy.HP > 0)
                             playerManager.NotifyUnitHpChanged(enemy);

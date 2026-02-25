@@ -33,7 +33,10 @@ namespace CardBattle.ScriptableObjects
             var list = new List<EffectTarget>();
             if (state?.OpponentField?.Units == null) return list;
             foreach (var u in state.OpponentField.Units)
+            {
+                if (u.IsTotem) continue;
                 list.Add(EffectTarget.Unit(u.InstanceId));
+            }
             return list;
         }
 
@@ -42,7 +45,7 @@ namespace CardBattle.ScriptableObjects
             if (state?.OpponentField?.Units == null) return;
             if (target.Kind != EffectTargetKind.Unit || target.UnitInstanceId == null) return;
             var unit = state.OpponentField.Units.Find(u => u.InstanceId == target.UnitInstanceId.Value);
-            if (unit == null) return;
+            if (unit == null || unit.IsTotem) return;
             unit.HP -= 1;
             if (unit.HP <= 0)
                 state.OpponentField.Units.Remove(unit);
