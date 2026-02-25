@@ -35,9 +35,9 @@ namespace CardBattle.ScriptableObjects
                 entriesList.Add(new DeckRecipeEntry { Template = new GoblinSpearmanUnitCard(), Count = copies });
                 entriesList.Add(new DeckRecipeEntry { Template = new GoblinCavalryUnitCard(), Count = copies });
                 entriesList.Add(new DeckRecipeEntry { Template = new GoblinCommanderUnitCard(), Count = copies });
-                entriesList.Add(new DeckRecipeEntry { Template = new ForestBarbarianOgreUnitCard(), Count = copies });
-                entriesList.Add(new DeckRecipeEntry { Template = new FleshArmorOgreUnitCard(), Count = copies });
-                entriesList.Add(new DeckRecipeEntry { Template = new GreenLightHeraldUnitCard(), Count = copies });
+                entriesList.Add(new DeckRecipeEntry { Template = new ForestBarbarianOgreUnitCard(), Count = 2 });
+                entriesList.Add(new DeckRecipeEntry { Template = new FleshArmorOgreUnitCard(), Count = 3 });
+                entriesList.Add(new DeckRecipeEntry { Template = new GreenLightHeraldUnitCard(), Count = 2 });
                 entriesList.Add(new DeckRecipeEntry { Template = new GrimskinWhistleSpellCard(), Count = copies });
                 entriesList.Add(new DeckRecipeEntry { Template = new GrimskinNurseryTotemCard(), Count = copies });
             }

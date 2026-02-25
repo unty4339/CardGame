@@ -90,6 +90,8 @@ namespace CardBattle.UI
                 if (otherView != null)
                     gvm?.ShowPairingLine(this, otherView);
             }
+            if (Unit != null && Unit.PairingWithPartnerCard)
+                GameVisualManager.Instance?.ShowPairingLineToPartnerCard(this, Unit.OwnerPlayerId);
             if (Unit?.SourceCardTemplate == null) return;
             CardDescriptionPanel.ShowDescription(Unit.SourceCardTemplate.Description);
         }

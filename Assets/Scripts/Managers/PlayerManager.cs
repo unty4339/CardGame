@@ -169,6 +169,39 @@ namespace CardBattle.Managers
         }
 
         /// <summary>
+        /// ペアリングで加算した攻撃・体力ボーナスを還元し、保存値をクリアする。
+        /// </summary>
+        public void ApplyAndClearPairingBonus(Unit unit)
+        {
+            if (unit == null) return;
+            AddUnitAttack(unit, -unit.PairingAttackBonus);
+            AddUnitHp(unit, -unit.PairingHpBonus);
+            unit.PairingAttackBonus = 0;
+            unit.PairingHpBonus = 0;
+        }
+
+        /// <summary>
+        /// パートナーカードとのペアリングのみ解除する（破壊通知は行わない）。身代わり効果でパートナーカードをペア対象にしていた場合に使用する。
+        /// </summary>
+        public void UnpairPartnerCardOnly(Unit unit)
+        {
+            if (unit == null || !unit.PairingWithPartnerCard)
+                return;
+
+            ApplyAndClearPairingBonus(unit);
+
+            var state = BuildGameStateForPlayer(unit.OwnerPlayerId);
+            var template = unit.SourceCardTemplate as UnitCardTemplateBase;
+            if (template != null)
+            {
+                foreach (var effect in template.GetOnUnpairEffects())
+                    effect.Resolve(unit, state, unit);
+            }
+            unit.PairingWithPartnerCard = false;
+            GameVisualManager.Instance?.UpdatePartnerCardDraggable(unit.OwnerPlayerId);
+        }
+
+        /// <summary>
         /// ユニットが場を離れる前にペアリング解除（OnUnpair 発動・参照クリア）を行い、続けて破壊通知する。
         /// 呼び出し元はこのメソッドの後に Units.Remove(unit) を行うこと。
         /// </summary>
@@ -186,6 +219,7 @@ namespace CardBattle.Managers
 
             if (unit.PairingWithPartnerCard)
             {
+                ApplyAndClearPairingBonus(unit);
                 var state = BuildGameStateForPlayer(unit.OwnerPlayerId);
                 var template = unit.SourceCardTemplate as UnitCardTemplateBase;
                 if (template != null)
@@ -194,10 +228,13 @@ namespace CardBattle.Managers
                         effect.Resolve(unit, state, unit);
                 }
                 unit.PairingWithPartnerCard = false;
+                GameVisualManager.Instance?.UpdatePartnerCardDraggable(unit.OwnerPlayerId);
             }
             else if (unit.PairingTarget != null)
             {
                 var partner = unit.PairingTarget;
+                ApplyAndClearPairingBonus(unit);
+                ApplyAndClearPairingBonus(partner);
                 var state = BuildGameStateForPlayer(unit.OwnerPlayerId);
 
                 var partnerTemplate = partner.SourceCardTemplate as UnitCardTemplateBase;

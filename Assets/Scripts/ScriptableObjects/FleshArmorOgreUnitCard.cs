@@ -7,10 +7,9 @@ using CardBattle.Managers;
 namespace CardBattle.ScriptableObjects
 {
     /// <summary>
-    /// 肉鎧のオーク。登場時ペア、ペアリング時+X/+X、ペアリング中攻撃できない付与済み、破壊時ペアを代わりに破壊。
-    /// 戦闘破壊肩代わりは拡張が必要。ペアリング対象選択と+X/+Xは実装済み。
+    /// 肉鎧のオーク。登場時ペア、ペアリング時+X/+X、ペアリング中攻撃できない付与済み、戦闘時身代わり（ペア先破壊 or ペア解除でダメージ無効）。
     /// </summary>
-    public class FleshArmorOgreUnitCard : UnitCardTemplateBase, IOnPairingEffect, IGrantsCannotAttackToPairTarget
+    public class FleshArmorOgreUnitCard : UnitCardTemplateBase, IOnPairingEffect, IGrantsCannotAttackToPairTarget, IWhilePairedSubstitution
     {
         public FleshArmorOgreUnitCard()
         {
@@ -28,7 +27,7 @@ namespace CardBattle.ScriptableObjects
             {
                 foreach (var u in state.OpponentField.Units)
                 {
-                    if (u.HP == 1)
+                    if (u.HP == 1 && !state.IsAlreadySomeonesPairingTarget(u))
                         list.Add(EffectTarget.Unit(u.InstanceId));
                 }
             }
@@ -36,11 +35,11 @@ namespace CardBattle.ScriptableObjects
             {
                 foreach (var u in state.MyField.Units)
                 {
-                    if (u.IsPartner)
+                    if (u.IsPartner && !state.IsAlreadySomeonesPairingTarget(u))
                         list.Add(EffectTarget.Unit(u.InstanceId));
                 }
             }
-            if (!isPartnerOnField && state != null)
+            if (!isPartnerOnField && state != null && !state.IsPartnerCardAlreadyPairingTarget())
                 list.Add(EffectTarget.PartnerCard(state.MyPlayerId));
             return list;
         }
@@ -51,6 +50,8 @@ namespace CardBattle.ScriptableObjects
             var x = pairTargetUnitOrNull.Attack;
             PlayerManager.Instance?.AddUnitAttack(sourceUnit, x);
             PlayerManager.Instance?.AddUnitHp(sourceUnit, x);
+            sourceUnit.PairingAttackBonus = x;
+            sourceUnit.PairingHpBonus = x;
             pairTargetUnitOrNull.CanAttackUnit = false;
             pairTargetUnitOrNull.CanAttackPlayer = false;
         }

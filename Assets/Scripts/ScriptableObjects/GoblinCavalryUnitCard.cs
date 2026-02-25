@@ -6,9 +6,9 @@ using CardBattle.Core.Field;
 namespace CardBattle.ScriptableObjects
 {
     /// <summary>
-    /// ゴブリンの騎兵。登場時ペア。ペアリング中：攻撃できない付与済み。攻撃力コピー・戦闘破壊時ペア肩代わりは拡張が必要。
+    /// ゴブリンの騎兵。登場時ペア。ペアリング中：攻撃できない付与済み、攻撃力コピー、戦闘時身代わり（ペア先破壊 or ペア解除でダメージ無効）。
     /// </summary>
-    public class GoblinCavalryUnitCard : UnitCardTemplateBase, IOnPairingEffect, IGrantsCannotAttackToPairTarget, ICopiesAttackFromPairTarget
+    public class GoblinCavalryUnitCard : UnitCardTemplateBase, IOnPairingEffect, IGrantsCannotAttackToPairTarget, ICopiesAttackFromPairTarget, IWhilePairedSubstitution
     {
         public GoblinCavalryUnitCard()
         {
@@ -26,7 +26,7 @@ namespace CardBattle.ScriptableObjects
             {
                 foreach (var u in state.OpponentField.Units)
                 {
-                    if (u.HP == 1)
+                    if (u.HP == 1 && !state.IsAlreadySomeonesPairingTarget(u))
                         list.Add(EffectTarget.Unit(u.InstanceId));
                 }
             }
@@ -34,18 +34,18 @@ namespace CardBattle.ScriptableObjects
             {
                 foreach (var u in state.MyField.Units)
                 {
-                    if (u.IsPartner)
+                    if (u.IsPartner && !state.IsAlreadySomeonesPairingTarget(u))
                         list.Add(EffectTarget.Unit(u.InstanceId));
                 }
             }
-            if (!isPartnerOnField && state != null)
+            if (!isPartnerOnField && state != null && !state.IsPartnerCardAlreadyPairingTarget())
                 list.Add(EffectTarget.PartnerCard(state.MyPlayerId));
             return list;
         }
 
         public void Resolve(EffectTarget target, GameState state, Unit sourceUnit, Unit pairTargetUnitOrNull)
         {
-            // ペアリングは呼び出し側で双方向に設定済み。攻撃力コピー・戦闘破壊肩代わりは拡張で対応。
+            // ペアリングは呼び出し側で双方向に設定済み。攻撃力コピーは ICopiesAttackFromPairTarget、身代わりは IWhilePairedSubstitution で対応。
             if (pairTargetUnitOrNull != null)
             {
                 pairTargetUnitOrNull.CanAttackUnit = false;

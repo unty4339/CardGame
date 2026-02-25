@@ -27,7 +27,7 @@ namespace CardBattle.ScriptableObjects
             {
                 foreach (var u in state.OpponentField.Units)
                 {
-                    if (u.HP == 1 && u.PairingTarget == null)
+                    if (u.HP == 1 && u.PairingTarget == null && !state.IsAlreadySomeonesPairingTarget(u))
                         list.Add(EffectTarget.Unit(u.InstanceId));
                 }
             }
@@ -36,12 +36,12 @@ namespace CardBattle.ScriptableObjects
             {
                 foreach (var u in state.MyField.Units)
                 {
-                    if (u.IsPartner && u.PairingTarget == null)
+                    if (u.IsPartner && u.PairingTarget == null && !state.IsAlreadySomeonesPairingTarget(u))
                         list.Add(EffectTarget.Unit(u.InstanceId));
                 }
             }
 
-            if (!isPartnerOnField && state != null)
+            if (!isPartnerOnField && state != null && !state.IsPartnerCardAlreadyPairingTarget())
                 list.Add(EffectTarget.PartnerCard(state.MyPlayerId));
 
             return list;

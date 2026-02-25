@@ -69,6 +69,11 @@ namespace CardBattle.Managers
             if (data == null || data.PartnerZone == null || data.PartnerZone.Partner == null)
                 throw new InvalidOperationException("Player data, PartnerZone or Partner is null.");
             if (data.PartnerZone.IsPartnerOnField) return false;
+            if (data.FieldZone?.Units != null)
+            {
+                foreach (var u in data.FieldZone.Units)
+                    if (u.PairingWithPartnerCard) return false;
+            }
 
             var partner = data.PartnerZone.Partner;
             if (data.CurrentMP < partner.Cost) return false;

@@ -311,7 +311,15 @@ namespace CardBattle.UI
             view.transform.localPosition = Vector3.zero;
             view.Initialize(data.PartnerZone.Partner);
             view.OwnerPlayerId = playerId;
-            view.SetDraggable(!data.PartnerZone.IsPartnerOnField);
+            var partnerInPairing = false;
+            if (data.FieldZone?.Units != null)
+            {
+                foreach (var u in data.FieldZone.Units)
+                {
+                    if (u.PairingWithPartnerCard) { partnerInPairing = true; break; }
+                }
+            }
+            view.SetDraggable(!data.PartnerZone.IsPartnerOnField && !partnerInPairing);
             if (fieldV != null && fieldV.FieldAreaRect != null)
                 view.SetFieldAreaRect(fieldV.FieldAreaRect);
 
@@ -319,6 +327,29 @@ namespace CardBattle.UI
                 _partnerCardViewPlayer0 = view;
             else
                 _partnerCardViewPlayer1 = view;
+        }
+
+        /// <summary>
+        /// 指定プレイヤーのパートナーカードのドラッグ可否を現在の状態（フィールド出撃済み・ペアリング中）に合わせて更新する。
+        /// ペアリング対象にパートナーを選んだ直後や、ペアリング解除時に呼ぶ。
+        /// </summary>
+        public void UpdatePartnerCardDraggable(int playerId)
+        {
+            var pm = PlayerManager.Instance;
+            if (pm == null) return;
+            var data = pm.GetPlayerData(playerId);
+            if (data?.PartnerZone?.Partner == null) return;
+            var view = playerId == 0 ? _partnerCardViewPlayer0 : _partnerCardViewPlayer1;
+            if (view == null) return;
+            var partnerInPairing = false;
+            if (data.FieldZone?.Units != null)
+            {
+                foreach (var u in data.FieldZone.Units)
+                {
+                    if (u.PairingWithPartnerCard) { partnerInPairing = true; break; }
+                }
+            }
+            view.SetDraggable(!data.PartnerZone.IsPartnerOnField && !partnerInPairing);
         }
 
         /// <summary>パートナーがユニットとして召喚されたとき、カードを上に消す演出とユニットを上から出現させる演出を再生する。</summary>
@@ -620,6 +651,35 @@ namespace CardBattle.UI
         {
             if (pairingLineView != null && from != null && to != null)
                 pairingLineView.Show(from.transform, to.transform);
+        }
+
+        /// <summary>
+        /// ユニットからパートナーカードへペアリング白線を表示する。PairingWithPartnerCard のユニットホバー時に呼ばれる。
+        /// </summary>
+        public void ShowPairingLineToPartnerCard(UnitView from, int partnerOwnerPlayerId)
+        {
+            if (pairingLineView == null || from == null) return;
+            var partnerView = partnerOwnerPlayerId == 0 ? _partnerCardViewPlayer0 : _partnerCardViewPlayer1;
+            if (partnerView != null)
+                pairingLineView.Show(from.transform, partnerView.transform);
+        }
+
+        /// <summary>
+        /// パートナーカードからペア中のユニットへペアリング白線を表示する。パートナーカードホバー時に呼ばれる。
+        /// </summary>
+        public void ShowPairingLineFromPartnerCard(int partnerOwnerPlayerId)
+        {
+            if (pairingLineView == null) return;
+            var partnerView = partnerOwnerPlayerId == 0 ? _partnerCardViewPlayer0 : _partnerCardViewPlayer1;
+            if (partnerView == null) return;
+            var data = PlayerManager.Instance?.GetPlayerData(partnerOwnerPlayerId);
+            var units = data?.FieldZone?.Units;
+            if (units == null) return;
+            var pairedUnit = units.Find(u => u.PairingWithPartnerCard);
+            if (pairedUnit == null) return;
+            var unitView = GetUnitViewByInstanceId(partnerOwnerPlayerId, pairedUnit.InstanceId);
+            if (unitView == null) return;
+            pairingLineView.Show(partnerView.transform, unitView.transform);
         }
 
         /// <summary>

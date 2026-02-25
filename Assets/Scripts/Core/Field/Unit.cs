@@ -51,6 +51,16 @@ namespace CardBattle.Core.Field
         public bool PairingWithPartnerCard { get; set; }
 
         /// <summary>
+        /// ペアリングで加算した攻撃力。解除時に還元するために保持する。
+        /// </summary>
+        public int PairingAttackBonus { get; set; }
+
+        /// <summary>
+        /// ペアリングで加算した体力。解除時に還元するために保持する。
+        /// </summary>
+        public int PairingHpBonus { get; set; }
+
+        /// <summary>
         /// パートナーであるかどうか
         /// </summary>
         public bool IsPartner { get; set; }

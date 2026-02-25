@@ -406,9 +406,10 @@ namespace CardBattle.Managers
                     pairTargetUnit = b;
                 }
             }
-            else if (target.Kind == EffectTargetKind.PartnerCard)
+            else if (target.Kind == EffectTargetKind.PartnerCard && target.PlayerId is int ownerId)
             {
                 unit.PairingWithPartnerCard = true;
+                GameVisualManager.Instance?.UpdatePartnerCardDraggable(ownerId);
             }
 
             var isPartnerChosenAsTarget = (target.Kind == EffectTargetKind.PartnerCard && target.PlayerId == 0)

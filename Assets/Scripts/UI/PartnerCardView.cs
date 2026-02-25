@@ -115,11 +115,13 @@ namespace CardBattle.UI
 
         public void OnPointerEnter(PointerEventData eventData)
         {
+            GameVisualManager.Instance?.ShowPairingLineFromPartnerCard(OwnerPlayerId);
             CardDescriptionPanel.ShowDescription(Partner?.Description);
         }
 
         public void OnPointerExit(PointerEventData eventData)
         {
+            GameVisualManager.Instance?.HidePairingLine();
             CardDescriptionPanel.HideDescription();
         }
 

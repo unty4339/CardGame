@@ -14,40 +14,63 @@ namespace CardBattle.Battle
     {
         /// <summary>
         /// 攻撃側ユニットと防御側ユニットを受け取り、双方の体力を減らし破壊判定を行う。
-        /// 肩代わり: defender が IWhilePairedSubstitution を持ち、PairingTarget がフィールド上のユニットのとき、ダメージ先を PairingTarget に振り替える。
-        /// パートナーが破壊された場合はパートナーゾーンに戻す処理を行う。
+        /// 身代わり: defender または attacker が IWhilePairedSubstitution を持ちペア中の場合、ペア先を破壊するかペア解除し、そのユニットへのダメージを一度だけ無効にする。
         /// </summary>
         public void ResolveUnitAttack(Unit attacker, Unit defender, FieldZone attackerField, FieldZone defenderField)
         {
             var playerManager = PlayerManager.Instance;
 
-            Unit damageReceiver;
-            if (defender.SourceCardTemplate is IWhilePairedSubstitution
-                && defender.PairingTarget != null
-                && !defender.PairingWithPartnerCard)
+            var defenderSubstitutionActive = defender.SourceCardTemplate is IWhilePairedSubstitution
+                && (defender.PairingTarget != null || defender.PairingWithPartnerCard);
+
+            if (defenderSubstitutionActive)
             {
-                damageReceiver = defender.PairingTarget;
+                if (defender.PairingWithPartnerCard)
+                {
+                    playerManager?.UnpairPartnerCardOnly(defender);
+                }
+                else
+                {
+                    var pairTarget = defender.PairingTarget;
+                    playerManager?.UnpairIfNeededAndNotifyDestroyed(pairTarget);
+                    defenderField.Units.Remove(pairTarget);
+                }
             }
             else
             {
-                damageReceiver = defender;
+                playerManager?.AddUnitHp(defender, -playerManager.GetEffectiveAttack(attacker));
+                if (defender.HP <= 0)
+                {
+                    playerManager?.UnpairIfNeededAndNotifyDestroyed(defender);
+                    defenderField.Units.Remove(defender);
+                }
             }
 
-            playerManager?.AddUnitHp(damageReceiver, -playerManager.GetEffectiveAttack(attacker));
-            playerManager?.AddUnitHp(attacker, -defender.Attack);
-            if (damageReceiver != defender)
-                playerManager?.NotifyUnitHpChanged(defender);
+            var attackerSubstitutionActive = attacker.SourceCardTemplate is IWhilePairedSubstitution
+                && (attacker.PairingTarget != null || attacker.PairingWithPartnerCard);
 
-            if (damageReceiver.HP <= 0)
+            if (attackerSubstitutionActive)
             {
-                playerManager?.UnpairIfNeededAndNotifyDestroyed(damageReceiver);
-                defenderField.Units.Remove(damageReceiver);
+                if (attacker.PairingWithPartnerCard)
+                {
+                    playerManager?.UnpairPartnerCardOnly(attacker);
+                }
+                else
+                {
+                    var pairTarget = attacker.PairingTarget;
+                    playerManager?.UnpairIfNeededAndNotifyDestroyed(pairTarget);
+                    var fieldForPair = pairTarget.OwnerPlayerId == attacker.OwnerPlayerId ? attackerField : defenderField;
+                    fieldForPair.Units.Remove(pairTarget);
+                }
             }
-
-            if (attacker.HP <= 0)
+            else
             {
-                playerManager?.UnpairIfNeededAndNotifyDestroyed(attacker);
-                attackerField.Units.Remove(attacker);
+                playerManager?.AddUnitHp(attacker, -defender.Attack);
+                if (attacker.HP <= 0)
+                {
+                    playerManager?.UnpairIfNeededAndNotifyDestroyed(attacker);
+                    attackerField.Units.Remove(attacker);
+                }
             }
         }
 
