@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using CardBattle.AI;
 using CardBattle.Core.Effects;
 using CardBattle.Core.Field;
+using CardBattle.Managers;
 
 namespace CardBattle.ScriptableObjects
 {
@@ -34,7 +35,7 @@ namespace CardBattle.ScriptableObjects
             if (target.Kind != EffectTargetKind.Unit || target.UnitInstanceId == null) return;
             var unit = state.OpponentField.Units.Find(u => u.InstanceId == target.UnitInstanceId.Value);
             if (unit != null)
-                unit.HP = 1;
+                PlayerManager.Instance?.SetUnitHp(unit, 1);
         }
     }
 }

@@ -110,6 +110,46 @@ namespace CardBattle.Managers
         }
 
         /// <summary>
+        /// ユニットのHPを増減させ、表示更新を通知する。
+        /// </summary>
+        public void AddUnitHp(Unit unit, int delta)
+        {
+            if (unit == null) return;
+            unit.HP += delta;
+            NotifyUnitHpChanged(unit);
+        }
+
+        /// <summary>
+        /// ユニットのHPを指定値に設定し、表示更新を通知する。
+        /// </summary>
+        public void SetUnitHp(Unit unit, int value)
+        {
+            if (unit == null) return;
+            unit.HP = value;
+            NotifyUnitHpChanged(unit);
+        }
+
+        /// <summary>
+        /// ユニットの攻撃力を増減させ、表示更新を通知する。
+        /// </summary>
+        public void AddUnitAttack(Unit unit, int delta)
+        {
+            if (unit == null) return;
+            unit.Attack += delta;
+            NotifyUnitAttackChanged(unit);
+        }
+
+        /// <summary>
+        /// ユニットの攻撃力を指定値に設定し、表示更新を通知する。
+        /// </summary>
+        public void SetUnitAttack(Unit unit, int value)
+        {
+            if (unit == null) return;
+            unit.Attack = value;
+            NotifyUnitAttackChanged(unit);
+        }
+
+        /// <summary>
         /// ユニットの実効攻撃力を返す。ICopiesAttackFromPairTarget の場合はペア対象の攻撃力（パートナーカードの場合は BaseAttack）を返す。
         /// </summary>
         public int GetEffectiveAttack(Unit unit)

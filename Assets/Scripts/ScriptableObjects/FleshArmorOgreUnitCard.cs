@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using CardBattle.AI;
 using CardBattle.Core.Effects;
 using CardBattle.Core.Field;
+using CardBattle.Managers;
 
 namespace CardBattle.ScriptableObjects
 {
@@ -48,8 +49,8 @@ namespace CardBattle.ScriptableObjects
         {
             if (sourceUnit == null || pairTargetUnitOrNull == null) return;
             var x = pairTargetUnitOrNull.Attack;
-            sourceUnit.Attack += x;
-            sourceUnit.HP += x;
+            PlayerManager.Instance?.AddUnitAttack(sourceUnit, x);
+            PlayerManager.Instance?.AddUnitHp(sourceUnit, x);
             pairTargetUnitOrNull.CanAttackUnit = false;
             pairTargetUnitOrNull.CanAttackPlayer = false;
         }

@@ -33,11 +33,8 @@ namespace CardBattle.Battle
                 damageReceiver = defender;
             }
 
-            damageReceiver.HP -= playerManager.GetEffectiveAttack(attacker);
-            attacker.HP -= defender.Attack;
-
-            playerManager?.NotifyUnitHpChanged(attacker);
-            playerManager?.NotifyUnitHpChanged(damageReceiver);
+            playerManager?.AddUnitHp(damageReceiver, -playerManager.GetEffectiveAttack(attacker));
+            playerManager?.AddUnitHp(attacker, -defender.Attack);
             if (damageReceiver != defender)
                 playerManager?.NotifyUnitHpChanged(defender);
 
