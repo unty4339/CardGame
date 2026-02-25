@@ -17,7 +17,7 @@ namespace CardBattle.ScriptableObjects
             playCost = 4;
             baseHP = 2;
             baseAttack = 2;
-            description = "登場時：\n自分の場の全ての「ゴブリン」を+1/+1。";
+            description = "登場時：\n自分の場の全ての「ゴブリン」ユニットを+1/+1。";
         }
 
         public IList<EffectTarget> GetAvailableTargets(GameState state, Unit sourceUnit)

@@ -38,7 +38,7 @@ namespace CardBattle.ScriptableObjects
                 entriesList.Add(new DeckRecipeEntry { Template = new ForestBarbarianOgreUnitCard(), Count = 2 });
                 entriesList.Add(new DeckRecipeEntry { Template = new FleshArmorOgreUnitCard(), Count = 3 });
                 entriesList.Add(new DeckRecipeEntry { Template = new GreenLightHeraldUnitCard(), Count = 2 });
-                entriesList.Add(new DeckRecipeEntry { Template = new GrimskinWhistleSpellCard(), Count = copies });
+                entriesList.Add(new DeckRecipeEntry { Template = new GrimskinGreenLightSpellCard(), Count = copies });
                 entriesList.Add(new DeckRecipeEntry { Template = new GrimskinNurseryTotemCard(), Count = copies });
             }
             else

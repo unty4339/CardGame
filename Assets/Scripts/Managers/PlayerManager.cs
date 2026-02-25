@@ -150,20 +150,34 @@ namespace CardBattle.Managers
         }
 
         /// <summary>
-        /// ユニットの実効攻撃力を返す。ICopiesAttackFromPairTarget の場合はペア対象の攻撃力（パートナーカードの場合は BaseAttack）を返す。
+        /// ユニットの実効攻撃力を返す。IAddsPairAttackToSelf の場合は自身＋ペアの攻撃力。ICopiesAttackFromPairTarget の場合はペア対象の攻撃力（パートナーカードの場合は BaseAttack）。
         /// </summary>
         public int GetEffectiveAttack(Unit unit)
         {
             if (unit == null) return 0;
-            if (unit.SourceCardTemplate is not ICopiesAttackFromPairTarget)
-                return unit.Attack;
-            if (unit.IsPairedWithUnit)
-                return unit.GetPairTargetUnitOrNull().Attack;
-            if (unit.PairingWithPartnerCard)
+            if (unit.SourceCardTemplate is IAddsPairAttackToSelf)
             {
-                var data = GetPlayerData(unit.OwnerPlayerId);
-                var partnerAttack = data?.PartnerZone?.Partner?.BaseAttack;
-                return partnerAttack ?? unit.Attack;
+                if (unit.IsPairedWithUnit)
+                    return unit.Attack + unit.GetPairTargetUnitOrNull().Attack;
+                if (unit.PairingWithPartnerCard)
+                {
+                    var data = GetPlayerData(unit.OwnerPlayerId);
+                    var partnerAttack = data?.PartnerZone?.Partner?.BaseAttack ?? 0;
+                    return unit.Attack + partnerAttack;
+                }
+                return unit.Attack;
+            }
+            if (unit.SourceCardTemplate is ICopiesAttackFromPairTarget)
+            {
+                if (unit.IsPairedWithUnit)
+                    return unit.GetPairTargetUnitOrNull().Attack;
+                if (unit.PairingWithPartnerCard)
+                {
+                    var data = GetPlayerData(unit.OwnerPlayerId);
+                    var partnerAttack = data?.PartnerZone?.Partner?.BaseAttack;
+                    return partnerAttack ?? unit.Attack;
+                }
+                return unit.Attack;
             }
             return unit.Attack;
         }

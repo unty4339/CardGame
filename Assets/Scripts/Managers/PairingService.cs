@@ -155,7 +155,7 @@ namespace CardBattle.Managers
                     effect.Resolve(target, state, unit, pairTargetUnit);
             }
 
-            if (unit.SourceCardTemplate is ICopiesAttackFromPairTarget)
+            if (unit.SourceCardTemplate is ICopiesAttackFromPairTarget || unit.SourceCardTemplate is IAddsPairAttackToSelf)
                 PlayerManager.Instance?.NotifyUnitAttackChanged(unit);
 
             if (unit.SourceCardTemplate is IPairingStandingPicture psp)

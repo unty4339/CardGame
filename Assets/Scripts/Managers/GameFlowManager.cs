@@ -95,11 +95,11 @@ namespace CardBattle.Managers
         {
             return new Partner
             {
-                Cost = 3,
-                BaseHP = 3,
-                BaseAttack = 3,
+                Cost = 4,
+                BaseHP = 4,
+                BaseAttack = 2,
                 CardName = "未来航士、リュシア",
-                Description = "パートナー\n登場時：\nマナが2以上ある場合、相手ユニット全体に1ダメージを与え、破壊したユニットの数と等しい量だけマナを回復する。",
+                Description = "パートナー\n登場時：\nマナが1以上ある場合、マナを1消費する。相手ユニット全体に1ダメージを与え、破壊したユニットの数と等しい量だけマナを回復する。",
                 Keywords = new System.Collections.Generic.List<KeywordAbility>()
             };
         }

@@ -7,13 +7,13 @@ using CardBattle.Core.Field;
 namespace CardBattle.ScriptableObjects
 {
     /// <summary>
-    /// 緑光の先触れ。超速攻、登場時相手ユニット1体破壊。
+    /// 緑光の主。超速攻、登場時相手ユニット1体破壊。
     /// </summary>
     public class GreenLightHeraldUnitCard : UnitCardTemplateBase, IOnSummonEffect
     {
         public GreenLightHeraldUnitCard()
         {
-            cardName = "緑光の先触れ";
+            cardName = "緑光の主";
             playCost = 8;
             baseHP = 6;
             baseAttack = 3;

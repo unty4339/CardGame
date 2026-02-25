@@ -8,9 +8,9 @@ using CardBattle.UI;
 namespace CardBattle.ScriptableObjects
 {
     /// <summary>
-    /// ゴブリンの騎兵。登場時ペア。ペアリング中：攻撃できない付与済み、攻撃力コピー、戦闘時身代わり（ペア先破壊 or ペア解除でダメージ無効）。
+    /// ゴブリンの騎兵。登場時ペア。ペアリング中：攻撃できない付与、攻撃はペアの分だけ増加、戦闘時身代わり。
     /// </summary>
-    public class GoblinCavalryUnitCard : UnitCardTemplateBase, IOnPairingEffect, IGrantsCannotAttackToPairTarget, ICopiesAttackFromPairTarget, IWhilePairedSubstitution, IPairingStandingPicture
+    public class GoblinCavalryUnitCard : UnitCardTemplateBase, IOnPairingEffect, IGrantsCannotAttackToPairTarget, IAddsPairAttackToSelf, IWhilePairedSubstitution, IPairingStandingPicture
     {
         public GoblinCavalryUnitCard()
         {
@@ -18,7 +18,7 @@ namespace CardBattle.ScriptableObjects
             playCost = 3;
             baseHP = 1;
             baseAttack = 2;
-            description = "登場時：\nペアリング中でない、自分パートナーか体力1の相手ユニットとペアリングする。\n\nペアリング中：\nペア対象に「攻撃できない」を付与する。\nこのカードの攻撃はペア対象の攻撃と等しくなる。\nこのカードが戦闘で破壊されるとき、代わりにペア対象を破壊する。";
+            description = "登場時：\nペアリング中でない、自分パートナーか体力1の相手ユニットとペアリングする。\nペアリング中：\nペア対象に「攻撃できない」を付与する。\nこのカードの攻撃はペア対象の攻撃の分だけ増加する。\nこのカードが戦闘を行うとき、ダメージを受ける代わりにペア対象を破壊する。";
         }
 
         public IList<EffectTarget> GetAvailableTargets(GameState state, Unit sourceUnit, bool isPartnerOnField)
@@ -28,7 +28,7 @@ namespace CardBattle.ScriptableObjects
 
         public void Resolve(EffectTarget target, GameState state, Unit sourceUnit, Unit pairTargetUnitOrNull)
         {
-            // ペアリングは呼び出し側で双方向に設定済み。攻撃力コピーは ICopiesAttackFromPairTarget、身代わりは IWhilePairedSubstitution で対応。
+            // ペアリングは呼び出し側で双方向に設定済み。攻撃力加算は IAddsPairAttackToSelf、身代わりは IWhilePairedSubstitution で対応。
             if (pairTargetUnitOrNull != null)
             {
                 pairTargetUnitOrNull.CanAttackUnit = false;

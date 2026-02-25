@@ -102,10 +102,10 @@ namespace CardBattle.Managers
 
             PairingService.MigratePartnerCardPairingToUnit(unit, data.FieldZone);
 
-            // 登場時効果（未来航士、リュシア）: マナ2以上なら相手全体1ダメージ・破壊数分マナ回復（選択UIなし・常にこの効果）
-            if (data.CurrentMP >= 2)
+            // 登場時効果（未来航士、リュシア）: マナ1以上なら1消費・相手全体1ダメージ・破壊数分マナ回復（選択UIなし・常にこの効果）
+            if (data.CurrentMP >= 1)
             {
-                data.CurrentMP -= 2;
+                data.CurrentMP -= 1;
                 int opponentId = 1 - playerId;
                 var oppData = playerManager.GetPlayerData(opponentId);
                 if (oppData?.FieldZone != null)
