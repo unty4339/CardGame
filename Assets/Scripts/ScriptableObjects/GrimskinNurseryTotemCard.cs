@@ -42,14 +42,11 @@ namespace CardBattle.ScriptableObjects
         }
 
         /// <summary>
-        /// ターン開始時：ゴブリン2枚手札に加え、ペア対象とこのトーテムを破壊する。
+        /// ターン開始時：ゴブリン2枚手札に加え、ペア対象とこのトーテムを破壊する。ペア対象がパートナーカードの場合はペアリング解除のみ行う。
         /// </summary>
         public void Resolve(Unit sourceUnit, int turnPlayerId)
         {
-            if (sourceUnit == null || !sourceUnit.IsPairedWithUnit) return;
-
-            var pairTarget = sourceUnit.GetPairTargetUnitOrNull();
-            if (pairTarget == null) return;
+            if (sourceUnit == null || !sourceUnit.IsPaired) return;
 
             var playerManager = PlayerManager.Instance;
             if (playerManager == null) return;
@@ -61,9 +58,20 @@ namespace CardBattle.ScriptableObjects
             playerManager.AddCardToHand(turnPlayerId, goblin);
             playerManager.AddCardToHand(turnPlayerId, goblin);
 
-            var pairTargetOwnerData = playerManager.GetPlayerData(pairTarget.OwnerPlayerId);
-            playerManager.UnpairIfNeededAndNotifyDestroyed(pairTarget);
-            pairTargetOwnerData?.FieldZone.Units.Remove(pairTarget);
+            if (sourceUnit.PairingWithPartnerCard)
+            {
+                playerManager.UnpairPartnerCardOnly(sourceUnit);
+            }
+            else
+            {
+                var pairTarget = sourceUnit.GetPairTargetUnitOrNull();
+                if (pairTarget != null)
+                {
+                    var pairTargetOwnerData = playerManager.GetPlayerData(pairTarget.OwnerPlayerId);
+                    playerManager.UnpairIfNeededAndNotifyDestroyed(pairTarget);
+                    pairTargetOwnerData?.FieldZone.Units.Remove(pairTarget);
+                }
+            }
 
             playerManager.UnpairIfNeededAndNotifyDestroyed(sourceUnit);
             data.FieldZone.Units.Remove(sourceUnit);

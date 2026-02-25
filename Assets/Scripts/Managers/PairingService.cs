@@ -39,6 +39,10 @@ namespace CardBattle.Managers
             var pm = PlayerManager.Instance;
             if (pm == null) return;
 
+            // 先にフラグを解除しておく。ApplyAndClearPairingBonus 内で NotifyUnitAttackChanged が飛び、
+            // 表示が GetEffectiveAttack(unit) で更新されるため、この時点でペア解除済みにしておく必要がある。
+            unit.PairingWithPartnerCard = false;
+
             ApplyAndClearPairingBonus(unit);
 
             var state = pm.GetGameStateForPlayer(unit.OwnerPlayerId);
@@ -48,8 +52,11 @@ namespace CardBattle.Managers
                 foreach (var effect in template.GetOnUnpairEffects())
                     effect.Resolve(unit, state, unit);
             }
-            unit.PairingWithPartnerCard = false;
             GameVisualManager.Instance?.UpdatePartnerCardDraggable(unit.OwnerPlayerId);
+
+            // パートナー選択時に変更した立ち絵を通常に戻す（プレイヤー0のユニットがペア解除した場合）
+            if (unit.OwnerPlayerId == 0)
+                StandingPictureManager.Instance?.SetStandingPicture(StandingPictureType.Normal);
         }
 
         /// <summary>

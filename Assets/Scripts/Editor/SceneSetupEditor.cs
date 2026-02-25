@@ -103,7 +103,9 @@ namespace CardBattle.Editor
 
             var canvas = canvasGo.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            canvasGo.AddComponent<CanvasScaler>().uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            var scaler = canvasGo.AddComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1280, 720);
             canvasGo.AddComponent<GraphicRaycaster>();
 
             var deck0Go = new GameObject("DeckAnchorPlayer0");
@@ -308,7 +310,7 @@ namespace CardBattle.Editor
             rect.anchorMax = new Vector2(0f, 1f);
             rect.pivot = new Vector2(0f, 0.5f);
             rect.offsetMin = Vector2.zero;
-            rect.offsetMax = new Vector2(300f, 0f);
+            rect.offsetMax = new Vector2(500f, 0f);
             go.AddComponent<CardBattle.UI.StandingPictureManager>();
             go.transform.SetSiblingIndex(0); // 最前面に配置
         }

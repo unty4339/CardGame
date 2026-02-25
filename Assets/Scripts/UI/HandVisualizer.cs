@@ -9,9 +9,8 @@ namespace CardBattle.UI
     /// </summary>
     public class HandVisualizer : MonoBehaviour
     {
-        [SerializeField] private float arcAngle = 20f;
-        [SerializeField] private float spacing = 150f;
-        [Tooltip("この枚数まではアーチを横に広げる。超えた分は同じ幅で間隔を詰める")]
+        private float arcAngle = 30f;
+        private float spacing = 150f;
         private int maxCardsForFullSpread = 5;
         public bool isOpponent;
         private float handBaseY = -50f;
@@ -26,7 +25,6 @@ namespace CardBattle.UI
         /// </summary>
         public Vector3 CalculatePosition(int index, int totalCount)
         {
-            if (totalCount <= 0) return Vector3.zero;
             if (isOpponent) return CalculatePositionForOpponent(index, totalCount);
             return CalculatePositionForSelf(index, totalCount);
         }
@@ -53,11 +51,9 @@ namespace CardBattle.UI
         /// </summary>
         private Vector3 CalculatePositionForOpponent(int index, int totalCount)
         {
-            if (totalCount == 1) return Vector3.zero;
-
             var y = 50f;
             var opponentSpacing = 15f;
-            var baseX = opponentSpacing * totalCount * 0.5f - 300f;
+            var baseX = opponentSpacing * totalCount * 0.5f - 400f;
             var x = baseX + opponentSpacing * index;
             return new Vector3(x, y, 0f);
         }
