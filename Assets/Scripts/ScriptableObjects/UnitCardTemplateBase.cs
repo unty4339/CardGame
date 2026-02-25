@@ -45,12 +45,23 @@ namespace CardBattle.ScriptableObjects
         }
 
         /// <summary>
+        /// プレイ時／召喚時に発動するペアリング効果のリスト。
+        /// </summary>
+        public override IReadOnlyList<IOnPairingEffect> GetPairingEffects()
+        {
+            if (this is IOnPairingEffect e)
+                return new[] { e };
+            return System.Array.Empty<IOnPairingEffect>();
+        }
+
+        /// <summary>
         /// ペアリング解除時に発動する効果。このテンプレートが IOnUnpairEffect を実装していればそれを返す。
         /// </summary>
-        public virtual IEnumerable<IOnUnpairEffect> GetOnUnpairEffects()
+        public override IReadOnlyList<IOnUnpairEffect> GetOnUnpairEffects()
         {
             if (this is IOnUnpairEffect e)
-                yield return e;
+                return new[] { e };
+            return System.Array.Empty<IOnUnpairEffect>();
         }
     }
 }

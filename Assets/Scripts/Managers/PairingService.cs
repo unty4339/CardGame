@@ -42,7 +42,7 @@ namespace CardBattle.Managers
             ApplyAndClearPairingBonus(unit);
 
             var state = pm.GetGameStateForPlayer(unit.OwnerPlayerId);
-            var template = unit.SourceCardTemplate as UnitCardTemplateBase;
+            var template = unit.SourceCardTemplate;
             if (template != null)
             {
                 foreach (var effect in template.GetOnUnpairEffects())
@@ -75,7 +75,7 @@ namespace CardBattle.Managers
             {
                 ApplyAndClearPairingBonus(unit);
                 var state = pm.GetGameStateForPlayer(unit.OwnerPlayerId);
-                var template = unit.SourceCardTemplate as UnitCardTemplateBase;
+                var template = unit.SourceCardTemplate;
                 if (template != null)
                 {
                     foreach (var effect in template.GetOnUnpairEffects())
@@ -91,14 +91,14 @@ namespace CardBattle.Managers
                 ApplyAndClearPairingBonus(partner);
                 var state = pm.GetGameStateForPlayer(unit.OwnerPlayerId);
 
-                var partnerTemplate = partner.SourceCardTemplate as UnitCardTemplateBase;
+                var partnerTemplate = partner.SourceCardTemplate;
                 if (partnerTemplate != null)
                 {
                     foreach (var effect in partnerTemplate.GetOnUnpairEffects())
                         effect.Resolve(unit, state, partner);
                 }
 
-                var myTemplate = unit.SourceCardTemplate as UnitCardTemplateBase;
+                var myTemplate = unit.SourceCardTemplate;
                 if (myTemplate != null)
                 {
                     foreach (var effect in myTemplate.GetOnUnpairEffects())

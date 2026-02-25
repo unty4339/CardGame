@@ -163,14 +163,13 @@ namespace CardBattle.Managers
                                 playerManager.UnpairIfNeededAndNotifyDestroyed(u);
                         }
 
-                        TryResolvePairingSync(unit, unitBase, ownerPlayerId, opponentId, myData, oppData, state, onEffectsResolved);
+                        TryResolvePairingSync(unit, unit.SourceCardTemplate, ownerPlayerId, opponentId, myData, oppData, state, onEffectsResolved);
                     }
                 }
             }
             else
             {
-                var unitBaseFallback = unit?.SourceCardTemplate as UnitCardTemplateBase;
-                if (unit != null && unitBaseFallback != null)
+                if (unit != null && unit.SourceCardTemplate != null)
                 {
                     var playerManager = PlayerManager.Instance;
                     var myData = playerManager?.GetPlayerData(ownerPlayerId);
@@ -190,7 +189,7 @@ namespace CardBattle.Managers
                             MyMP = myData.CurrentMP,
                             OpponentMP = oppData.CurrentMP
                         };
-                        var onPairingEffects = unitBaseFallback.GetOnPairingEffects()?.ToList();
+                        var onPairingEffects = unit.SourceCardTemplate.GetPairingEffects();
                         var needAsyncPairing = onPairingEffects != null && onPairingEffects.Count > 0
                             && EffectResolver.Instance != null
                             && ownerPlayerId == 0;
@@ -200,11 +199,11 @@ namespace CardBattle.Managers
                             var choices = onPairingEffects[0].GetAvailableTargets(state, unit, isPartnerOnField);
                             if (choices != null && choices.Count > 1)
                             {
-                                StartCoroutine(ResolvePairingCoroutine(unit, unitBaseFallback, ownerPlayerId, opponentId, state, playerManager, onEffectsResolved));
+                                StartCoroutine(ResolvePairingCoroutine(unit, unit.SourceCardTemplate, ownerPlayerId, opponentId, state, playerManager, onEffectsResolved));
                                 return unit;
                             }
                         }
-                        TryResolvePairingSync(unit, unitBaseFallback, ownerPlayerId, opponentId, myData, oppData, state, onEffectsResolved);
+                        TryResolvePairingSync(unit, unit.SourceCardTemplate, ownerPlayerId, opponentId, myData, oppData, state, onEffectsResolved);
                         return unit;
                     }
                 }
@@ -216,7 +215,7 @@ namespace CardBattle.Managers
 
         private static void TryResolvePairingSync(
             Unit unit,
-            UnitCardTemplateBase unitBase,
+            CardTemplate template,
             int ownerPlayerId,
             int opponentId,
             PlayerData myData,
@@ -224,7 +223,7 @@ namespace CardBattle.Managers
             GameState state,
             Action<Unit> onEffectsResolved)
         {
-            var onPairingEffects = unitBase.GetOnPairingEffects()?.ToList();
+            var onPairingEffects = template?.GetPairingEffects();
             if (onPairingEffects == null || onPairingEffects.Count == 0)
             {
                 onEffectsResolved?.Invoke(unit);
@@ -325,10 +324,10 @@ namespace CardBattle.Managers
                     playerManager.UnpairIfNeededAndNotifyDestroyed(u);
             }
 
-            var unitBase = unit.SourceCardTemplate as UnitCardTemplateBase;
-            if (unitBase != null)
+            var template = unit.SourceCardTemplate;
+            if (template != null && template.GetPairingEffects().Count > 0)
             {
-                yield return ResolvePairingCoroutine(unit, unitBase, ownerPlayerId, opponentId, state, playerManager, onEffectsResolved);
+                yield return ResolvePairingCoroutine(unit, template, ownerPlayerId, opponentId, state, playerManager, onEffectsResolved);
                 yield break;
             }
 
@@ -337,14 +336,14 @@ namespace CardBattle.Managers
 
         private IEnumerator ResolvePairingCoroutine(
             Unit unit,
-            UnitCardTemplateBase unitBase,
+            CardTemplate template,
             int ownerPlayerId,
             int opponentId,
             GameState state,
             PlayerManager playerManager,
             Action<Unit> onEffectsResolved)
         {
-            var onPairingEffects = unitBase.GetOnPairingEffects()?.ToList();
+            var onPairingEffects = template?.GetPairingEffects();
             if (onPairingEffects == null || onPairingEffects.Count == 0)
             {
                 onEffectsResolved?.Invoke(unit);
@@ -387,19 +386,18 @@ namespace CardBattle.Managers
         }
 
         /// <summary>
-        /// トーテムの発動時ペアリングを解決する。効果がある場合は対象取得ののち必要なら非同期でプレイヤーに選択させ、適用後に onComplete を呼ぶ。
+        /// プレイ時／召喚時のペアリングを解決する。効果がある場合は対象取得ののち必要なら非同期でプレイヤーに選択させ、適用後に onComplete を呼ぶ。ユニット・トーテム共通。
         /// </summary>
-        public void RunTotemOnPlayPairing(Unit totemUnit, Card card, int ownerId, Action onComplete)
+        public void RunOnPlayPairing(Unit unit, Card card, int ownerId, Action onComplete)
         {
-            if (totemUnit == null || card?.Template == null || onComplete == null)
+            if (unit == null || card?.Template == null || onComplete == null)
             {
                 onComplete?.Invoke();
                 return;
             }
 
-            var totemBase = card.Template as TotemCardTemplateBase;
-            var effect = totemBase?.GetOnPlayPairingEffect();
-            if (effect == null)
+            var effects = card.Template.GetPairingEffects();
+            if (effects == null || effects.Count == 0)
             {
                 onComplete();
                 return;
@@ -429,7 +427,7 @@ namespace CardBattle.Managers
             };
 
             var isPartnerOnField = myData.PartnerZone?.IsPartnerOnField ?? false;
-            var choices = effect.GetAvailableTargets(state, totemUnit, isPartnerOnField);
+            var choices = effects[0].GetAvailableTargets(state, unit, isPartnerOnField);
             if (choices == null || choices.Count == 0)
             {
                 onComplete();
@@ -438,22 +436,21 @@ namespace CardBattle.Managers
 
             var resolver = EffectResolver.Instance;
             var needTargetSelection = resolver != null && ownerId == 0 && choices.Count > 1;
-            Debug.Log($"[RunTotemOnPlayPairing] choices.Count={choices?.Count ?? 0}, needTargetSelection={needTargetSelection}");
 
             if (needTargetSelection)
             {
-                StartCoroutine(TotemOnPlayPairingCoroutine(totemUnit, effect, ownerId, opponentId, state, myData, oppData, choices, onComplete));
+                StartCoroutine(OnPlayPairingCoroutine(unit, effects, ownerId, opponentId, state, myData, oppData, choices, onComplete));
                 return;
             }
 
             var target = choices[0];
-            PairingService.ApplyPairingResult(totemUnit, target, new List<IOnPairingEffect> { effect }, state, myData, oppData);
+            PairingService.ApplyPairingResult(unit, target, effects, state, myData, oppData);
             onComplete();
         }
 
-        private IEnumerator TotemOnPlayPairingCoroutine(
-            Unit totemUnit,
-            IOnPairingEffect effect,
+        private IEnumerator OnPlayPairingCoroutine(
+            Unit unit,
+            IReadOnlyList<IOnPairingEffect> effects,
             int ownerId,
             int opponentId,
             GameState state,
@@ -468,7 +465,7 @@ namespace CardBattle.Managers
             while (!task.IsCompleted)
                 yield return null;
             var target = task.GetAwaiter().GetResult();
-            PairingService.ApplyPairingResult(totemUnit, target, new List<IOnPairingEffect> { effect }, state, myData, oppData);
+            PairingService.ApplyPairingResult(unit, target, effects, state, myData, oppData);
             onComplete();
         }
 

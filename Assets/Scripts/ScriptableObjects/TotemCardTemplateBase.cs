@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using CardBattle.Core.Effects;
 using CardBattle.Core.Enums;
 
@@ -14,11 +15,13 @@ namespace CardBattle.ScriptableObjects
         public override TotemData TotemData => totemData;
 
         /// <summary>
-        /// 発動時（プレイ時）にペアリング対象選択を行う効果。このテンプレートが IOnPairingEffect を実装していればそれを返す。
+        /// プレイ時に発動するペアリング効果のリスト。このテンプレートが IOnPairingEffect を実装していればそれを返す。
         /// </summary>
-        public virtual IOnPairingEffect GetOnPlayPairingEffect()
+        public override IReadOnlyList<IOnPairingEffect> GetPairingEffects()
         {
-            return this is IOnPairingEffect effect ? effect : null;
+            if (this is IOnPairingEffect effect)
+                return new[] { effect };
+            return System.Array.Empty<IOnPairingEffect>();
         }
     }
 }

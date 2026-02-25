@@ -25,10 +25,9 @@ namespace CardBattle.ScriptableObjects
         public IList<EffectTarget> GetAvailableTargets(GameState state, Unit sourceUnit)
         {
             var list = new List<EffectTarget>();
-            if (state?.OpponentField?.Units == null) return list;
-            foreach (var u in state.OpponentField.Units)
+            if (state?.OpponentField == null) return list;
+            foreach (var u in state.OpponentField.GetTargetableUnits())
             {
-                if (u.IsTotem) continue;
                 list.Add(EffectTarget.Unit(u.InstanceId));
             }
             return list;

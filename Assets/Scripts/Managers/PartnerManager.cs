@@ -108,11 +108,10 @@ namespace CardBattle.Managers
                 data.CurrentMP -= 2;
                 int opponentId = 1 - playerId;
                 var oppData = playerManager.GetPlayerData(opponentId);
-                if (oppData?.FieldZone?.Units != null)
+                if (oppData?.FieldZone != null)
                 {
-                    foreach (var enemy in oppData.FieldZone.Units)
+                    foreach (var enemy in oppData.FieldZone.GetTargetableUnits())
                     {
-                        if (enemy.IsTotem) continue;
                         playerManager.AddUnitHp(enemy, -1);
                     }
                     var toRemove = new List<Unit>();

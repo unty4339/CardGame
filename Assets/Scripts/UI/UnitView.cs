@@ -22,6 +22,7 @@ namespace CardBattle.UI
         [SerializeField] private TextMeshProUGUI hpText;
         [SerializeField] private TextMeshProUGUI unitNameText;
         [SerializeField] private Image bodyImage;
+        [SerializeField] private Image frameImage;
         [SerializeField] private float stepBackAmount = 50f;
         [SerializeField] private float rushDuration = 0.1f;
         [Tooltip("攻撃時に対象を向くときのZ回転オフセット（度）。正面が上のスプライトなら -90 が目安")]
@@ -219,6 +220,12 @@ namespace CardBattle.UI
             var nameForArt = unitData?.SourceCardTemplate?.CardName ?? unitData?.DisplayName ?? "";
             if (bodyImage != null && !string.IsNullOrEmpty(nameForArt))
                 StartCoroutine(LoadArtworkIfExists(nameForArt, bodyImage));
+
+            var frameType = unitData != null && unitData.IsPartner ? FrameType.Partner
+                : unitData != null && unitData.IsTotem ? FrameType.Spell
+                : FrameType.Unit;
+            if (frameImage != null)
+                StartCoroutine(FrameImageHelper.LoadFrameAsync(frameType, frameImage));
         }
 
         private static IEnumerator LoadArtworkIfExists(string cardName, Image target)

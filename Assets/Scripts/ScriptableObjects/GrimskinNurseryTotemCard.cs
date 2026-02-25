@@ -3,15 +3,16 @@ using CardBattle.AI;
 using CardBattle.Core.Effects;
 using CardBattle.Core.Enums;
 using CardBattle.Core.Field;
+using CardBattle.Managers;
 using CardBattle.UI;
 using UnityEngine;
 
 namespace CardBattle.ScriptableObjects
 {
     /// <summary>
-    /// グリンスキンの苗床。トーテム。発動時ペア・ペアリング中攻撃できない付与済み。ターン開始時等の効果はトーテム用フック拡張が必要。
+    /// グリンスキンの苗床。トーテム。発動時ペア・ペアリング中攻撃できない付与済み。ターン開始時：ゴブリン2枚手札に加え、ペア対象とこれを破壊。
     /// </summary>
-    public class GrimskinNurseryTotemCard : TotemCardTemplateBase, IOnPairingEffect, IGrantsCannotAttackToPairTarget, IPairingStandingPicture
+    public class GrimskinNurseryTotemCard : TotemCardTemplateBase, IOnPairingEffect, IGrantsCannotAttackToPairTarget, IPairingStandingPicture, ITurnStartEffect
     {
         public GrimskinNurseryTotemCard()
         {
@@ -23,30 +24,7 @@ namespace CardBattle.ScriptableObjects
 
         public IList<EffectTarget> GetAvailableTargets(GameState state, Unit sourceUnit, bool isPartnerOnField)
         {
-            var list = new List<EffectTarget>();
-
-            if (state?.OpponentField?.Units != null)
-            {
-                foreach (var u in state.OpponentField.Units)
-                {
-                    if (u.HP == 1 && u.PairingTarget == null && !state.IsAlreadySomeonesPairingTarget(u))
-                        list.Add(EffectTarget.Unit(u.InstanceId));
-                }
-            }
-
-            if (state?.MyField?.Units != null && isPartnerOnField)
-            {
-                foreach (var u in state.MyField.Units)
-                {
-                    if (u.IsPartner && u.PairingTarget == null && !state.IsAlreadySomeonesPairingTarget(u))
-                        list.Add(EffectTarget.Unit(u.InstanceId));
-                }
-            }
-
-            if (!isPartnerOnField && state != null && !state.IsPartnerCardAlreadyPairingTarget())
-                list.Add(EffectTarget.PartnerCard(state.MyPlayerId));
-
-            return list;
+            return PairingTargetCandidates.GetStandardPairingTargets(state, isPartnerOnField);
         }
 
         public void Resolve(EffectTarget target, GameState state, Unit sourceUnit, Unit pairTargetUnitOrNull)
@@ -61,6 +39,34 @@ namespace CardBattle.ScriptableObjects
         public string GetStandingPictureTypeWhenPartnerChosen(EffectTarget target, Unit pairTargetUnitOrNull)
         {
             return target.Kind == EffectTargetKind.PartnerCard ? StandingPictureType.Submission : null;
+        }
+
+        /// <summary>
+        /// ターン開始時：ゴブリン2枚手札に加え、ペア対象とこのトーテムを破壊する。
+        /// </summary>
+        public void Resolve(Unit sourceUnit, int turnPlayerId)
+        {
+            if (sourceUnit == null || !sourceUnit.IsPairedWithUnit) return;
+
+            var pairTarget = sourceUnit.GetPairTargetUnitOrNull();
+            if (pairTarget == null) return;
+
+            var playerManager = PlayerManager.Instance;
+            if (playerManager == null) return;
+
+            var data = playerManager.GetPlayerData(turnPlayerId);
+            if (data == null) return;
+
+            var goblin = new GoblinUnitCard();
+            playerManager.AddCardToHand(turnPlayerId, goblin);
+            playerManager.AddCardToHand(turnPlayerId, goblin);
+
+            var pairTargetOwnerData = playerManager.GetPlayerData(pairTarget.OwnerPlayerId);
+            playerManager.UnpairIfNeededAndNotifyDestroyed(pairTarget);
+            pairTargetOwnerData?.FieldZone.Units.Remove(pairTarget);
+
+            playerManager.UnpairIfNeededAndNotifyDestroyed(sourceUnit);
+            data.FieldZone.Units.Remove(sourceUnit);
         }
     }
 }

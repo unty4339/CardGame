@@ -426,9 +426,8 @@ namespace CardBattle.Managers
             var data = GetPlayerData(playerId);
             if (data == null) return;
 
-            foreach (var unit in data.FieldZone.Units)
+            foreach (var unit in data.FieldZone.GetAttackableUnits())
             {
-                if (unit.IsTotem) continue;
                 // ゴブリンの騎兵・肉鎧のオーク・グリンスキンの苗床などとペア中のユニットは攻撃権を付与しない
                 if (unit.GetPairTargetUnitOrNull()?.SourceCardTemplate is IGrantsCannotAttackToPairTarget)
                     continue;
@@ -452,32 +451,22 @@ namespace CardBattle.Managers
         }
 
         /// <summary>
-        /// ターン開始時トーテム効果を実行する（グリンスキンの苗床：ゴブリン2枚手札に加え、ペア対象とトーテムを破壊）。
+        /// ターン開始時効果を実行する。フィールドの各ユニット（トーテム含む）の SourceCardTemplate が ITurnStartEffect を持つ場合に発動する。
         /// </summary>
-        public void RunTurnStartTotemEffects(int turnPlayerId)
+        public void RunTurnStartEffects(int turnPlayerId)
         {
             var data = GetPlayerData(turnPlayerId);
             if (data == null) return;
 
-            var goblin = new GoblinUnitCard();
-            var totemsToProcess = data.FieldZone.Units
-                .Where(u => u.IsTotem && u.SourceCardTemplate is GrimskinNurseryTotemCard && u.IsPairedWithUnit)
+            var unitsToProcess = data.FieldZone.Units
+                .Where(u => u.SourceCardTemplate?.GetTurnStartEffect() != null)
                 .ToList();
 
-            foreach (var totem in totemsToProcess)
+            foreach (var unit in unitsToProcess)
             {
-                var pairTarget = totem.GetPairTargetUnitOrNull();
-                if (pairTarget == null) continue;
-
-                AddCardToHand(turnPlayerId, goblin);
-                AddCardToHand(turnPlayerId, goblin);
-
-                var pairTargetOwnerData = GetPlayerData(pairTarget.OwnerPlayerId);
-                UnpairIfNeededAndNotifyDestroyed(pairTarget);
-                pairTargetOwnerData?.FieldZone.Units.Remove(pairTarget);
-
-                UnpairIfNeededAndNotifyDestroyed(totem);
-                data.FieldZone.Units.Remove(totem);
+                var effect = unit.SourceCardTemplate.GetTurnStartEffect();
+                if (effect != null)
+                    effect.Resolve(unit, turnPlayerId);
             }
         }
 

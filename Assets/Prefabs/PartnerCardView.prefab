@@ -424,6 +424,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   artwork: {fileID: 1048043251344486351}
+  frameImage: {fileID: 7261261736934088684}
   cost: {fileID: 7385291317057227974}
   attack: {fileID: 5306397980086675286}
   hp: {fileID: 7232191339649154108}

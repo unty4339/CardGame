@@ -252,10 +252,10 @@ namespace CardBattle.Managers
                         if (totemUnit != null)
                             playerManager.NotifyUnitSummoned(ownerId, action.SourceCard, totemUnit);
 
-                        var onPlayPairingEffect = (template as TotemCardTemplateBase)?.GetOnPlayPairingEffect();
-                        if (onPlayPairingEffect != null && totemUnit != null)
+                        var pairingEffects = template.GetPairingEffects();
+                        if (pairingEffects != null && pairingEffects.Count > 0 && totemUnit != null)
                         {
-                            unitManager.RunTotemOnPlayPairing(totemUnit, action.SourceCard, ownerId, () =>
+                            unitManager.RunOnPlayPairing(totemUnit, action.SourceCard, ownerId, () =>
                             {
                                 var turnActionLog = TurnActionLog.Instance;
                                 var gameFlowManager = GameFlowManager.Instance;

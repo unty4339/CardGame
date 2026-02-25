@@ -144,9 +144,8 @@ namespace CardBattle.AI
 
                 if (unit.CanAttackUnit)
                 {
-                    foreach (var target in state.OpponentField.Units)
+                    foreach (var target in state.OpponentField.GetAttackableUnits())
                     {
-                        if (target.IsTotem) continue;
                         actions.Add(new GameAction
                         {
                             ActionType = ActionType.Attack,
@@ -304,13 +303,10 @@ namespace CardBattle.AI
                     Keywords = new List<Core.Enums.KeywordAbility>(u.Keywords),
                     InstanceId = u.InstanceId,
                     OwnerPlayerId = u.OwnerPlayerId,
-                    IsPartner = u.IsPartner
+                    IsPartner = u.IsPartner,
+                    IsTotem = u.IsTotem
                 };
                 clone.Units.Add(unitClone);
-            }
-            foreach (var t in zone.Totems)
-            {
-                clone.Totems.Add(new Totem { OwnerPlayerId = t.OwnerPlayerId });
             }
             return clone;
         }

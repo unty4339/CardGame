@@ -183,7 +183,7 @@ namespace CardBattle.Managers
             playerManager.RestoreMP(turnPlayerId);
             playerManager.GrantAttackToAllUnits(turnPlayerId);
             playerManager.IncrementTurnsOnField(turnPlayerId);
-            playerManager.RunTurnStartTotemEffects(turnPlayerId);
+            playerManager.RunTurnStartEffects(turnPlayerId);
 
             _currentTurnPlayer = turnPlayerId;
 

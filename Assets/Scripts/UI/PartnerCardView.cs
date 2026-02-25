@@ -17,6 +17,7 @@ namespace CardBattle.UI
     public class PartnerCardView : MonoBehaviour, IDragHandler, IBeginDragHandler, IEndDragHandler, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
     {
         [SerializeField] private Image artwork;
+        [SerializeField] private Image frameImage;
         [SerializeField] private TextMeshProUGUI cost;
         [SerializeField] private TextMeshProUGUI attack;
         [SerializeField] private TextMeshProUGUI hp;
@@ -52,6 +53,8 @@ namespace CardBattle.UI
             if (hp != null) hp.text = partner.BaseHP.ToString();
             if (artwork != null && !string.IsNullOrEmpty(partner.CardName))
                 StartCoroutine(LoadArtworkIfExists(partner.CardName, artwork));
+            if (frameImage != null)
+                StartCoroutine(FrameImageHelper.LoadFrameAsync(FrameType.Partner, frameImage));
         }
 
         private static IEnumerator LoadArtworkIfExists(string cardName, Image target)

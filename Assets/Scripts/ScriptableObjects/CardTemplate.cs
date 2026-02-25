@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using CardBattle.Core.Effects;
 using CardBattle.Core.Enums;
 
 namespace CardBattle.ScriptableObjects
@@ -17,5 +19,20 @@ namespace CardBattle.ScriptableObjects
         public virtual TotemData TotemData => null;
         /// <summary>カード説明文。マウスオーバー時に画面右側に表示する。</summary>
         public virtual string Description => description ?? "";
+
+        /// <summary>
+        /// プレイ時／召喚時に発動するペアリング効果のリスト。デフォルトは空。
+        /// </summary>
+        public virtual IReadOnlyList<IOnPairingEffect> GetPairingEffects() => System.Array.Empty<IOnPairingEffect>();
+
+        /// <summary>
+        /// ペアリング解除時に発動する効果のリスト。デフォルトは空。
+        /// </summary>
+        public virtual IReadOnlyList<IOnUnpairEffect> GetOnUnpairEffects() => System.Array.Empty<IOnUnpairEffect>();
+
+        /// <summary>
+        /// ターン開始時に発動する効果。このテンプレートが ITurnStartEffect を実装していればそれを返す。
+        /// </summary>
+        public virtual ITurnStartEffect GetTurnStartEffect() => this is ITurnStartEffect e ? e : null;
     }
 }

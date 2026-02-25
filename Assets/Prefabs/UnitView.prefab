@@ -460,6 +460,7 @@ MonoBehaviour:
   hpText: {fileID: 7281945390823739205}
   unitNameText: {fileID: 6504117079485435148}
   bodyImage: {fileID: 6254140510839294082}
+  frameImage: {fileID: 2014354485349385961}
   stepBackAmount: 50
   rushDuration: 0.1
   rotationOffsetDeg: -90
