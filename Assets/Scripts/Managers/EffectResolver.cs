@@ -1,3 +1,5 @@
+using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -123,6 +125,28 @@ namespace CardBattle.Managers
         public Task<EffectTarget> RequestTargetAsync(IList<EffectTarget> choices, CancellationToken cancellation = default)
         {
             return RequestTargetAsync(choices, 0, cancellation);
+        }
+
+        /// <summary>
+        /// 対象選択をコルーチンで行い、完了時に onSelected を呼ぶ。人間プレイヤー時は UI で選択（メインスレッドをブロックしない）。
+        /// 候補が空・AI の場合は即座に onSelected を呼んで yield break する。
+        /// </summary>
+        public IEnumerator RunTargetSelectionCoroutine(IList<EffectTarget> choices, int actingPlayerId, Action<EffectTarget> onSelected)
+        {
+            if (choices == null || choices.Count == 0)
+            {
+                onSelected(EffectTarget.None());
+                yield break;
+            }
+            if (actingPlayerId != 0)
+            {
+                onSelected(choices[0]);
+                yield break;
+            }
+            var task = RequestTargetAsync(choices, actingPlayerId);
+            while (!task.IsCompleted)
+                yield return null;
+            onSelected(task.GetAwaiter().GetResult());
         }
 
         /// <summary>

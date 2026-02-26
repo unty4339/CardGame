@@ -124,7 +124,7 @@ namespace CardBattle.Managers
 
                         var resolver = EffectResolver.Instance;
                         var needTargetSelection = resolver != null && ownerPlayerId == 0
-                            && onSummonEffects.Any(e => (e.GetAvailableTargets(state, unit)?.Count ?? 0) > 1);
+                            && onSummonEffects.Any(e => (e.GetAvailableTargets(state, unit)?.Count ?? 0) >= 1);
 
                         if (needTargetSelection)
                         {
@@ -163,6 +163,20 @@ namespace CardBattle.Managers
                                 playerManager.UnpairIfNeededAndNotifyDestroyed(u);
                         }
 
+                        var onPairingEffectsAfterSummon = unit.SourceCardTemplate?.GetPairingEffects();
+                        var needAsyncPairingAfterSummon = onPairingEffectsAfterSummon != null && onPairingEffectsAfterSummon.Count > 0
+                            && EffectResolver.Instance != null
+                            && ownerPlayerId == 0;
+                        if (needAsyncPairingAfterSummon)
+                        {
+                            var isPartnerOnField = myData.PartnerZone?.IsPartnerOnField ?? false;
+                            var pairingChoices = onPairingEffectsAfterSummon[0].GetAvailableTargets(state, unit, isPartnerOnField);
+                            if (pairingChoices != null && pairingChoices.Count >= 1)
+                            {
+                                StartCoroutine(ResolvePairingCoroutine(unit, unit.SourceCardTemplate, ownerPlayerId, opponentId, state, playerManager, onEffectsResolved));
+                                return unit;
+                            }
+                        }
                         TryResolvePairingSync(unit, unit.SourceCardTemplate, ownerPlayerId, opponentId, myData, oppData, state, onEffectsResolved);
                     }
                 }
@@ -285,14 +299,12 @@ namespace CardBattle.Managers
             foreach (var effect in onSummonEffects)
             {
                 var choices = effect.GetAvailableTargets(state, unit);
-                var needUiSelection = resolver != null && ownerPlayerId == 0 && choices != null && choices.Count > 1;
                 EffectTarget target;
-                if (needUiSelection)
+                if (resolver != null && ownerPlayerId == 0 && choices != null)
                 {
-                    var task = resolver.RequestTargetAsync(choices, ownerPlayerId);
-                    while (!task.IsCompleted)
-                        yield return null;
-                    target = task.GetAwaiter().GetResult();
+                    target = default;
+                    yield return resolver.StartCoroutine(
+                        resolver.RunTargetSelectionCoroutine(choices, ownerPlayerId, t => target = t));
                 }
                 else
                 {
@@ -366,15 +378,11 @@ namespace CardBattle.Managers
                 yield break;
             }
 
-            var resolver = EffectResolver.Instance;
-            var needTargetSelection = resolver != null && ownerPlayerId == 0 && choices.Count >= 1;
-            EffectTarget target;
-            if (needTargetSelection)
+            EffectTarget target = default;
+            if (EffectResolver.Instance != null)
             {
-                var task = resolver.RequestTargetAsync(choices, ownerPlayerId);
-                while (!task.IsCompleted)
-                    yield return null;
-                target = task.GetAwaiter().GetResult();
+                yield return EffectResolver.Instance.StartCoroutine(
+                    EffectResolver.Instance.RunTargetSelectionCoroutine(choices, ownerPlayerId, t => target = t));
             }
             else
             {
@@ -459,12 +467,16 @@ namespace CardBattle.Managers
             IList<EffectTarget> choices,
             Action onComplete)
         {
-            yield return null;
-            var resolver = EffectResolver.Instance;
-            var task = resolver.RequestTargetAsync(choices, ownerId);
-            while (!task.IsCompleted)
-                yield return null;
-            var target = task.GetAwaiter().GetResult();
+            EffectTarget target = default;
+            if (EffectResolver.Instance != null)
+            {
+                yield return EffectResolver.Instance.StartCoroutine(
+                    EffectResolver.Instance.RunTargetSelectionCoroutine(choices, ownerId, t => target = t));
+            }
+            else
+            {
+                target = choices[0];
+            }
             PairingService.ApplyPairingResult(unit, target, effects, state, myData, oppData);
             onComplete();
         }

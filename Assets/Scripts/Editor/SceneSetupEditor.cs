@@ -292,7 +292,7 @@ namespace CardBattle.Editor
             Undo.RegisterCreatedObjectUndo(areaGo, "Create DialogueLogArea");
             areaGo.transform.SetParent(canvasTransform, false);
             var areaRect = areaGo.AddComponent<RectTransform>();
-            areaRect.anchorMin = new Vector2(0.78f, 0.2f);
+            areaRect.anchorMin = new Vector2(0.73f, 0.2f);
             areaRect.anchorMax = new Vector2(1f, 0.8f);
             areaRect.offsetMin = new Vector2(-10, 10);
             areaRect.offsetMax = new Vector2(-10, -10);
@@ -305,15 +305,6 @@ namespace CardBattle.Editor
             contentRect.offsetMin = Vector2.zero;
             contentRect.offsetMax = Vector2.zero;
             contentRect.pivot = new Vector2(0.5f, 0f);
-            var vlg = contentGo.AddComponent<VerticalLayoutGroup>();
-            vlg.childAlignment = TextAnchor.LowerCenter;
-            vlg.childControlWidth = true;
-            vlg.childControlHeight = false;
-            vlg.childForceExpandWidth = true;
-            vlg.childForceExpandHeight = false;
-            vlg.spacing = 0;
-            var csf = contentGo.AddComponent<ContentSizeFitter>();
-            csf.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
             var dialogueLog = areaGo.AddComponent<DialogueLog>();
             var so = new SerializedObject(dialogueLog);

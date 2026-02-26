@@ -244,26 +244,22 @@ namespace CardBattle.Managers
                                 var myUnitsBefore = new List<Unit>(state.MyField.Units);
 
                                 var choices = spellEffect.GetAvailableTargets(state);
-                                var needTargetSelection = EffectResolver.Instance != null
-                                    && ownerId == 0
-                                    && choices != null
-                                    && choices.Count > 1;
-
-                                Debug.Log($"[Spell] choices.Count={choices?.Count ?? 0}, ownerId={ownerId}, needTargetSelection={needTargetSelection}");
-
-                                if (needTargetSelection)
+                                if (EffectResolver.Instance != null && ownerId == 0 && choices != null)
                                 {
-                                    var ctx = new SpellTargetSelectionContext
+                                    StartCoroutine(EffectResolver.Instance.RunTargetSelectionCoroutine(choices, ownerId, target =>
                                     {
-                                        Action = action,
-                                        OwnerId = ownerId,
-                                        OpponentId = opponentId,
-                                        State = state,
-                                        SpellEffect = spellEffect,
-                                        OpponentUnitsBefore = opponentUnitsBefore,
-                                        MyUnitsBefore = myUnitsBefore
-                                    };
-                                    StartCoroutine(SpellWithTargetSelectionCoroutine(ctx, choices));
+                                        ApplySpellResolution(ownerId, opponentId, state, spellEffect, target,
+                                            opponentUnitsBefore, myUnitsBefore);
+                                        GameFlowManager.Instance?.RequestGameEnd(null);
+                                        var turnActionLog = TurnActionLog.Instance;
+                                        var gameFlowManager = GameFlowManager.Instance;
+                                        if (turnActionLog != null && gameFlowManager != null)
+                                            turnActionLog.RecordAction(action, gameFlowManager.CurrentTurnPlayerId);
+                                        playerManager.NotifySpellPlayed(ownerId, action.SourceCard);
+                                        var dialogueManager = DialogueManager.Instance;
+                                        dialogueManager?.OnCardPlayed(action.SourceCard);
+                                        NotifyActionAnimationCompleted();
+                                    }));
                                     return;
                                 }
 
@@ -310,41 +306,6 @@ namespace CardBattle.Managers
                 var dialogueManager = DialogueManager.Instance;
                 dialogueManager?.OnCardPlayed(action.SourceCard);
             }
-            NotifyActionAnimationCompleted();
-        }
-
-        private struct SpellTargetSelectionContext
-        {
-            public GameAction Action;
-            public int OwnerId;
-            public int OpponentId;
-            public GameState State;
-            public ISpellEffect SpellEffect;
-            public List<Unit> OpponentUnitsBefore;
-            public List<Unit> MyUnitsBefore;
-        }
-
-        private IEnumerator SpellWithTargetSelectionCoroutine(SpellTargetSelectionContext ctx, IList<EffectTarget> choices)
-        {
-            Debug.Log($"[SpellWithTargetSelectionCoroutine] started, choices.Count={choices?.Count ?? 0}");
-
-            var task = EffectResolver.Instance.RequestTargetAsync(choices, ctx.OwnerId);
-            while (!task.IsCompleted)
-                yield return null;
-
-            var target = task.GetAwaiter().GetResult();
-            Debug.Log($"[SpellWithTargetSelectionCoroutine] task completed, target.UnitInstanceId={target.UnitInstanceId?.ToString() ?? "null"}");
-            var playerManager = PlayerManager.Instance;
-            ApplySpellResolution(ctx.OwnerId, ctx.OpponentId, ctx.State, ctx.SpellEffect, target,
-                ctx.OpponentUnitsBefore, ctx.MyUnitsBefore);
-            GameFlowManager.Instance?.RequestGameEnd(null);
-            var turnActionLog = TurnActionLog.Instance;
-            var gameFlowManager = GameFlowManager.Instance;
-            if (turnActionLog != null && gameFlowManager != null)
-                turnActionLog.RecordAction(ctx.Action, gameFlowManager.CurrentTurnPlayerId);
-            playerManager?.NotifySpellPlayed(ctx.OwnerId, ctx.Action.SourceCard);
-            var dialogueManager = DialogueManager.Instance;
-            dialogueManager?.OnCardPlayed(ctx.Action.SourceCard);
             NotifyActionAnimationCompleted();
         }
 
