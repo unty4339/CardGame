@@ -197,7 +197,7 @@ namespace CardBattle.Managers
                         {
                             var isPartnerOnField = myData.PartnerZone?.IsPartnerOnField ?? false;
                             var choices = onPairingEffects[0].GetAvailableTargets(state, unit, isPartnerOnField);
-                            if (choices != null && choices.Count > 1)
+                            if (choices != null && choices.Count >= 1)
                             {
                                 StartCoroutine(ResolvePairingCoroutine(unit, unit.SourceCardTemplate, ownerPlayerId, opponentId, state, playerManager, onEffectsResolved));
                                 return unit;

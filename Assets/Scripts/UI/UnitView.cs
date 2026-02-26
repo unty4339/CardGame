@@ -146,10 +146,20 @@ namespace CardBattle.UI
         public void OnPointerClick(PointerEventData eventData)
         {
             var gameFlow = GameFlowManager.Instance;
-            if (gameFlow == null || gameFlow.CurrentPhase != GamePhase.TargetSelection) return;
-            if (!_selectableForEffect || Unit == null) return;
-            Debug.Log($"[UnitView.OnPointerClick] confirming target Unit.InstanceId={Unit.InstanceId}");
-            EffectResolver.Instance?.ConfirmTarget(EffectTarget.Unit(Unit.InstanceId));
+            if (gameFlow == null) return;
+
+            if (gameFlow.CurrentPhase == GamePhase.TargetSelection)
+            {
+                if (!_selectableForEffect || Unit == null) return;
+                Debug.Log($"[UnitView.OnPointerClick] confirming target Unit.InstanceId={Unit.InstanceId}");
+                EffectResolver.Instance?.ConfirmTarget(EffectTarget.Unit(Unit.InstanceId));
+                return;
+            }
+
+            if (gameFlow.CurrentPhase == GamePhase.Normal && Unit != null
+                && gameFlow.CurrentTurnPlayerId == Unit.OwnerPlayerId
+                && !Unit.CanAttackUnit && !Unit.CanAttackPlayer)
+                GamePromptView.Instance?.ShowFadingMessage("次ターンまで攻撃できません");
         }
 
         /// <summary>

@@ -172,6 +172,16 @@ namespace CardBattle.UI
 
             if (isOverField)
             {
+                var playerManager = PlayerManager.Instance;
+                if (playerManager != null)
+                {
+                    var data = playerManager.GetPlayerData(OwnerPlayerId);
+                    if (data != null && Partner != null && data.CurrentMP < Partner.Cost)
+                    {
+                        GamePromptView.Instance?.ShowFadingMessage("マナが足りません");
+                        return;
+                    }
+                }
                 var partnerManager = PartnerManager.Instance;
                 if (partnerManager != null)
                     partnerManager.SpawnPartnerAsUnit(OwnerPlayerId);

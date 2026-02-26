@@ -181,6 +181,39 @@ namespace CardBattle.Managers
                 }
                 else
                 {
+                    if (template.CardType == Core.Enums.CardType.Spell)
+                    {
+                        var spellEffect = template as ISpellEffect;
+                        if (spellEffect != null)
+                        {
+                            var opponentId = ownerId == 0 ? 1 : 0;
+                            var oppData = playerManager.GetPlayerData(opponentId);
+                            if (oppData != null)
+                            {
+                                var stateForCheck = new GameState
+                                {
+                                    MyPlayerId = ownerId,
+                                    OpponentPlayerId = opponentId,
+                                    MyField = ownerData.FieldZone,
+                                    OpponentField = oppData.FieldZone,
+                                    MyHand = new List<Card>(ownerData.Hand.Cards),
+                                    MyHP = ownerData.HP,
+                                    OpponentHP = oppData.HP,
+                                    MyMP = ownerData.CurrentMP,
+                                    OpponentMP = oppData.CurrentMP
+                                };
+                                var choices = spellEffect.GetAvailableTargets(stateForCheck);
+                                if (choices == null || choices.Count == 0)
+                                {
+                                    if (ownerId == 0)
+                                        GamePromptView.Instance?.ShowFadingMessage("有効な対象がありません");
+                                    NotifyActionAnimationCompleted();
+                                    return;
+                                }
+                            }
+                        }
+                    }
+
                     ownerData.CurrentMP -= template.PlayCost;
                     playerManager.NotifyPlayerDataChanged(ownerId);
                     ownerData.Hand.Cards.Remove(action.SourceCard);

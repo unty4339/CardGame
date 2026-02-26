@@ -33,8 +33,27 @@ namespace CardBattle.Editor
             var partnerCardViewPrefab = GetOrCreatePartnerCardViewPrefab();
             var dialogueBlockPrefab = GetOrCreateDialogueBlockPrefab();
             var promptPrefab = AssetDatabase.LoadAssetAtPath<GameObject>($"{PrefabsPath}/PromptPrefab.prefab");
+            GamePromptView gamePromptView = null;
+            if (promptPrefab != null)
+            {
+                var promptInstance = (GameObject)PrefabUtility.InstantiatePrefab(promptPrefab, canvasData.CanvasTransform);
+                promptInstance.name = "GamePrompt";
+                Undo.RegisterCreatedObjectUndo(promptInstance, "Create GamePrompt");
+                var rect = promptInstance.GetComponent<RectTransform>();
+                if (rect != null)
+                {
+                    rect.anchorMin = new Vector2(0.5f, 0.5f);
+                    rect.anchorMax = new Vector2(0.5f, 0.5f);
+                    rect.pivot = new Vector2(0.5f, 0.5f);
+                    rect.anchoredPosition = Vector2.zero;
+                }
+                promptInstance.SetActive(true);
+                gamePromptView = promptInstance.GetComponent<GamePromptView>();
+            }
+            else
+                Debug.LogWarning("[SceneSetupEditor] PromptPrefab not found at Assets/Prefabs/PromptPrefab.prefab. Game prompt will not be available.");
 
-            WireReferences(root, gameSystems, canvasData, cardPrefab, unitPrefab, partnerCardViewPrefab, dialogueBlockPrefab, promptPrefab);
+            WireReferences(root, gameSystems, canvasData, cardPrefab, unitPrefab, partnerCardViewPrefab, dialogueBlockPrefab, gamePromptView);
             EnsureCameraAndEventSystem(root);
 
             EditorSceneManager.MarkSceneDirty(UnityEngine.SceneManagement.SceneManager.GetActiveScene());
@@ -801,7 +820,7 @@ namespace CardBattle.Editor
         }
 
         private static void WireReferences(GameObject root, GameObject gameSystems, CanvasData canvasData,
-            CardView cardPrefab, UnitView unitPrefab, PartnerCardView partnerCardViewPrefab, DialogueBlock dialogueBlockPrefab, GameObject promptPrefab)
+            CardView cardPrefab, UnitView unitPrefab, PartnerCardView partnerCardViewPrefab, DialogueBlock dialogueBlockPrefab, GamePromptView gamePromptView)
         {
             var gameVisualManager = gameSystems.GetComponent<GameVisualManager>();
 
@@ -819,10 +838,8 @@ namespace CardBattle.Editor
             gvmSo.FindProperty("partnerZoneAnchorPlayer0").objectReferenceValue = canvasData.PartnerZoneAnchorPlayer0;
             gvmSo.FindProperty("partnerZoneAnchorPlayer1").objectReferenceValue = canvasData.PartnerZoneAnchorPlayer1;
             gvmSo.FindProperty("partnerCardViewPrefab").objectReferenceValue = partnerCardViewPrefab;
-            if (promptPrefab != null)
-                gvmSo.FindProperty("targetSelectionPromptPrefab").objectReferenceValue = promptPrefab;
-            else
-                Debug.LogWarning("[SceneSetupEditor] PromptPrefab not found at Assets/Prefabs/PromptPrefab.prefab. targetSelectionPromptPrefab will remain unassigned.");
+            if (gamePromptView != null)
+                gvmSo.FindProperty("gamePromptView").objectReferenceValue = gamePromptView;
             gvmSo.ApplyModifiedPropertiesWithoutUndo();
 
             var fv0So = new SerializedObject(canvasData.FieldVisualizerPlayer0);

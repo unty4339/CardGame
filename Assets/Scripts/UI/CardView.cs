@@ -241,6 +241,8 @@ namespace CardBattle.UI
                     });
                     return;
                 }
+                if (data != null && data.CurrentMP < Card.Template.PlayCost)
+                    GamePromptView.Instance?.ShowFadingMessage("マナが足りません");
             }
 
             _handVisualizer?.UpdateLayout();

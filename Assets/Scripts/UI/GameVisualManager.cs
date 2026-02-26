@@ -36,7 +36,7 @@ namespace CardBattle.UI
         [SerializeField] private Transform partnerZoneAnchorPlayer1;
         [SerializeField] private PartnerCardView partnerCardViewPrefab;
         [SerializeField] private PairingLineView pairingLineView;
-        [SerializeField] private GameObject targetSelectionPromptPrefab;
+        [SerializeField] private GamePromptView gamePromptView;
 
         [Header("手札→場 召喚アニメ")]
         [SerializeField] private float handCardPlayOutDuration = 0.3f;
@@ -54,7 +54,6 @@ namespace CardBattle.UI
         private const string AttackVideoAddress = "Assets/Prefabs/AttackVideo.prefab";
         private GameObject _bombVideoPrefab;
         private GameObject _attackVideoPrefab;
-        private GameObject _targetSelectionPromptInstance;
 
         private void Awake()
         {
@@ -684,31 +683,12 @@ namespace CardBattle.UI
         /// </summary>
         public void ShowTargetSelectionPrompt()
         {
-            if (targetSelectionPromptPrefab == null)
+            if (gamePromptView == null)
             {
-                Debug.LogWarning("[GameVisualManager] targetSelectionPromptPrefab is not assigned. Effect target selection prompt will not be shown.");
+                Debug.LogWarning("[GameVisualManager] gamePromptView is not assigned. Effect target selection prompt will not be shown.");
                 return;
             }
-
-            var parent = VideoEffectManager.Instance != null ? VideoEffectManager.Instance.uiParent : null;
-            if (parent == null)
-            {
-                var canvas = FindFirstObjectByType<Canvas>();
-                parent = canvas != null ? canvas.transform : null;
-            }
-            if (parent == null) return;
-
-            _targetSelectionPromptInstance = Instantiate(targetSelectionPromptPrefab, parent);
-            var rect = _targetSelectionPromptInstance.transform as RectTransform;
-            if (rect != null)
-            {
-                rect.anchorMin = new Vector2(0.5f, 0.5f);
-                rect.anchorMax = new Vector2(0.5f, 0.5f);
-                rect.pivot = new Vector2(0.5f, 0.5f);
-                // rect.offsetMin = Vector2.zero;
-                // rect.offsetMax = Vector2.zero;
-            }
-            _targetSelectionPromptInstance.SetActive(true);
+            gamePromptView.ShowTargetSelectionPrompt();
         }
 
         /// <summary>
@@ -716,11 +696,8 @@ namespace CardBattle.UI
         /// </summary>
         public void HideTargetSelectionPrompt()
         {
-            if (_targetSelectionPromptInstance != null)
-            {
-                Destroy(_targetSelectionPromptInstance);
-                _targetSelectionPromptInstance = null;
-            }
+            if (gamePromptView != null)
+                gamePromptView.HideTargetSelectionPrompt();
         }
     }
 }
