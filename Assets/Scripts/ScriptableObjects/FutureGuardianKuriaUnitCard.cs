@@ -11,8 +11,8 @@ namespace CardBattle.ScriptableObjects
         {
             cardName = "未来航士、リュシア";
             playCost = 4;
-            baseHP = 4;
-            baseAttack = 2;
+            baseHP = 2;
+            baseAttack = 4;
             description = "パートナー\n登場時：\nマナが1以上ある場合、マナを1消費する。相手ユニット全体に1ダメージを与え、破壊したユニットの数と等しい量だけマナを回復する。";
         }
     }

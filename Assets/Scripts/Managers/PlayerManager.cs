@@ -295,6 +295,7 @@ namespace CardBattle.Managers
             data.Deck.Cards.RemoveAt(0);
             data.Hand.Cards.Add(card);
             OnCardDrawn?.Invoke(playerId, card);
+            NotifyPlayerDataChanged(playerId);
             return true;
         }
 

@@ -27,7 +27,7 @@ namespace CardBattle.UI
             {
                 descriptionText.enableAutoSizing = true;
                 descriptionText.fontSizeMin = 5f;
-                descriptionText.fontSizeMax = 12f;
+                descriptionText.fontSizeMax = 18;
             }
             Hide();
         }

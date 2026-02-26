@@ -16,8 +16,8 @@ namespace CardBattle.ScriptableObjects
         {
             cardName = "ゴブリンの騎兵";
             playCost = 3;
-            baseHP = 1;
-            baseAttack = 2;
+            baseHP = 2;
+            baseAttack = 1;
             description = "登場時：\nペアリング中でない、自分パートナーか体力1の相手ユニットとペアリングする。\nペアリング中：\nペア対象に「攻撃できない」を付与する。\nこのカードの攻撃はペア対象の攻撃の分だけ増加する。\nこのカードが戦闘を行うとき、ダメージを受ける代わりにペア対象を破壊する。";
         }
 

@@ -16,7 +16,7 @@ namespace CardBattle.ScriptableObjects
             cardName = "森の蛮人、オーク";
             playCost = 5;
             baseHP = 4;
-            baseAttack = 3;
+            baseAttack = 4;
             description = "登場時：\n相手のユニットを1体選ぶ。そのユニットの体力を1にする。";
         }
 

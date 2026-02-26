@@ -394,6 +394,8 @@ namespace CardBattle.UI
             cardView.transform.localPosition = handV.transform.InverseTransformPoint(deckT.position);
             cardView.Initialize(cardData);
             cardView.OwnerPlayerId = playerId;
+            if (playerId == 1)
+                cardView.SetOpponentHandFaceDown(true);
             if (fieldV != null && fieldV.FieldAreaRect != null)
                 cardView.SetFieldAreaRect(fieldV.FieldAreaRect);
 

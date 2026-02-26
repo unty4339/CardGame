@@ -89,18 +89,19 @@ namespace CardBattle.Managers
         }
 
         /// <summary>
-        /// 自分プレイヤー用のデフォルトパートナー（未来航士、リュシア）を生成する
+        /// 自分プレイヤー用のデフォルトパートナー（未来航士、リュシア）を生成する。FutureGuardianKuriaUnitCard の値を参照する。
         /// </summary>
         private static Partner CreateDefaultPlayerPartner()
         {
+            var template = new FutureGuardianKuriaUnitCard();
             return new Partner
             {
-                Cost = 4,
-                BaseHP = 4,
-                BaseAttack = 2,
-                CardName = "未来航士、リュシア",
-                Description = "パートナー\n登場時：\nマナが1以上ある場合、マナを1消費する。相手ユニット全体に1ダメージを与え、破壊したユニットの数と等しい量だけマナを回復する。",
-                Keywords = new System.Collections.Generic.List<KeywordAbility>()
+                Cost = template.PlayCost,
+                BaseHP = template.BaseHP,
+                BaseAttack = template.BaseAttack,
+                CardName = template.CardName,
+                Description = template.Description,
+                Keywords = new System.Collections.Generic.List<KeywordAbility>(template.Keywords ?? System.Array.Empty<KeywordAbility>())
             };
         }
 

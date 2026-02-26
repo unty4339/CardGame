@@ -129,14 +129,14 @@ namespace CardBattle.Editor
             var partnerZone0Rect = partnerZone0Go.AddComponent<RectTransform>();
             partnerZone0Rect.anchorMin = new Vector2(0.5f, 0.5f);
             partnerZone0Rect.anchorMax = new Vector2(0.5f, 0.5f);
-            partnerZone0Rect.anchoredPosition = new Vector2(262.4f, -190f);
+            partnerZone0Rect.anchoredPosition = new Vector2(400f, -300f);
             partnerZone0Rect.sizeDelta = new Vector2(48f, 90f);
 
             var partnerZone1Go = new GameObject("PartnerZoneAnchorPlayer1");
             partnerZone1Go.transform.SetParent(canvasGo.transform, false);
             var partnerZone1Rect = partnerZone1Go.AddComponent<RectTransform>();
-            partnerZone1Rect.anchorMin = new Vector2(0.92f, 0.7f);
-            partnerZone1Rect.anchorMax = new Vector2(0.98f, 0.9f);
+            partnerZone1Rect.anchorMin = new Vector2(1.1f, 0.7f);
+            partnerZone1Rect.anchorMax = new Vector2(1.2f, 0.9f);
             partnerZone1Rect.offsetMin = Vector2.zero;
             partnerZone1Rect.offsetMax = Vector2.zero;
 
@@ -202,10 +202,12 @@ namespace CardBattle.Editor
                 player0InfoGo.name = "Player0Info";
                 Undo.RegisterCreatedObjectUndo(player0InfoGo, "Create Player0Info");
                 var rect0 = player0InfoGo.GetComponent<RectTransform>();
+                float width = 0.245f;
+                float height = 0.15f;
                 if (rect0 != null)
                 {
                     rect0.anchorMin = new Vector2(0, 0f);
-                    rect0.anchorMax = new Vector2(0.2f, 0.15f);
+                    rect0.anchorMax = new Vector2(width, height);
                     rect0.offsetMin = new Vector2(0, 0);
                     rect0.offsetMax = new Vector2(0, 0);
                 }
@@ -217,8 +219,8 @@ namespace CardBattle.Editor
                 var rect1 = player1InfoGo.GetComponent<RectTransform>();
                 if (rect1 != null)
                 {
-                    rect1.anchorMin = new Vector2(0.375f, 0.85f);
-                    rect1.anchorMax = new Vector2(0.625f, 1.0f);
+                    rect1.anchorMin = new Vector2(0.5f - width / 2, 1 - height);
+                    rect1.anchorMax = new Vector2(0.5f + width / 2, 1);
                     rect1.offsetMin = new Vector2(0, 0);
                     rect1.offsetMax = new Vector2(0, 0);
                 }
@@ -349,12 +351,12 @@ namespace CardBattle.Editor
             if (fontAsset != null)
                 tmp.font = fontAsset;
             tmp.text = "";
-            tmp.fontSize = 14;
+            tmp.fontSize = 25;
             tmp.overflowMode = TMPro.TextOverflowModes.Overflow;
             tmp.textWrappingMode = TMPro.TextWrappingModes.Normal;
             tmp.enableAutoSizing = true;
             tmp.fontSizeMin = 5f;
-            tmp.fontSizeMax = 12f;
+            tmp.fontSizeMax = 35f;
 
             var panel = go.AddComponent<CardBattle.UI.CardDescriptionPanel>();
             var so = new SerializedObject(panel);

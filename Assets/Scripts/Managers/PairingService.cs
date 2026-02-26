@@ -94,6 +94,9 @@ namespace CardBattle.Managers
             else if (unit.IsPairedWithUnit)
             {
                 var partner = unit.GetPairTargetUnitOrNull();
+                // 表示更新（NotifyUnitAttackChanged）が GetEffectiveAttack でペア解除済みと見えるよう、先に参照を外す。
+                unit.PairingTarget = null;
+                partner.PairingTarget = null;
                 ApplyAndClearPairingBonus(unit);
                 ApplyAndClearPairingBonus(partner);
                 var state = pm.GetGameStateForPlayer(unit.OwnerPlayerId);
@@ -111,9 +114,6 @@ namespace CardBattle.Managers
                     foreach (var effect in myTemplate.GetOnUnpairEffects())
                         effect.Resolve(unit, state, unit);
                 }
-
-                unit.PairingTarget = null;
-                partner.PairingTarget = null;
             }
 
             if (needPartnerSweating)

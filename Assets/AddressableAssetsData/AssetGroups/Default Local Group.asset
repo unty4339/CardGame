@@ -35,6 +35,11 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 48a3da8fd2c67b342b30d4378d653b31
+    m_Address: Assets/Images/back.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 57d98278399e04d4f90a06e4dc07d0cc
     m_Address: "Assets/Images/\u30B4\u30D6\u30EA\u30F3.png"
     m_ReadOnly: 0

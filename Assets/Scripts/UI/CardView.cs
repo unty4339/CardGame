@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using CardBattle.Core;
 using CardBattle.Core.Deck;
@@ -25,6 +26,8 @@ namespace CardBattle.UI
         [SerializeField] private TextMeshProUGUI cardNameText;
         [SerializeField] private CanvasGroup canvasGroup;
         [SerializeField] private RectTransform fieldAreaRect;
+        [SerializeField] private Image cardBackImage;
+        [SerializeField] private List<GameObject> performanceDisplayObjects = new List<GameObject>();
 
         private RectTransform _rectTransform;
         private Canvas _canvas;
@@ -36,6 +39,7 @@ namespace CardBattle.UI
         private Vector3 _targetLocalPosition;
         private bool _isDragging;
         private bool _hasTargetPosition;
+        private bool _isOpponentHandCard;
         private const float MoveLerpSpeed = 12f;
 
         private void Awake()
@@ -134,8 +138,65 @@ namespace CardBattle.UI
             _hasTargetPosition = true;
         }
 
+        /// <summary>
+        /// 相手の手札として裏向き表示にする（back.png を表示し、性能表示を非表示にする）
+        /// </summary>
+        public void SetOpponentHandFaceDown(bool value)
+        {
+            _isOpponentHandCard = value;
+            if (value)
+            {
+                if (cardBackImage != null)
+                {
+                    cardBackImage.gameObject.SetActive(true);
+                    StartCoroutine(LoadCardBack());
+                }
+                if (performanceDisplayObjects != null)
+                {
+                    foreach (var go in performanceDisplayObjects)
+                    {
+                        if (go != null) go.SetActive(false);
+                    }
+                }
+            }
+            else
+            {
+                if (cardBackImage != null) cardBackImage.gameObject.SetActive(false);
+                if (performanceDisplayObjects != null)
+                {
+                    foreach (var go in performanceDisplayObjects)
+                    {
+                        if (go != null) go.SetActive(true);
+                    }
+                }
+            }
+        }
+
+        private const string CardBackAddress = "Assets/Images/back.png";
+
+        private IEnumerator LoadCardBack()
+        {
+            if (cardBackImage == null) yield break;
+            var am = AddressableManager.Instance;
+            if (am == null) yield break;
+
+            Task<Sprite> loadTask = null;
+            try
+            {
+                loadTask = am.LoadAssetAsync<Sprite>(CardBackAddress);
+            }
+            catch
+            {
+                yield break;
+            }
+            yield return new WaitUntil(() => loadTask.IsCompleted);
+            if (loadTask.Status == TaskStatus.RanToCompletion && loadTask.Result != null && cardBackImage != null)
+                cardBackImage.sprite = loadTask.Result;
+        }
+
         public void OnPointerEnter(PointerEventData eventData)
         {
+            if (_isOpponentHandCard) return;
             if (Card?.Template == null) return;
             CardDescriptionPanel.ShowDescription(Card.Template.Description);
         }

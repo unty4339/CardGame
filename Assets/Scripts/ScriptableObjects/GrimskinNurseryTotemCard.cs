@@ -38,7 +38,9 @@ namespace CardBattle.ScriptableObjects
 
         public string GetStandingPictureTypeWhenPartnerChosen(EffectTarget target, Unit pairTargetUnitOrNull)
         {
-            return target.Kind == EffectTargetKind.PartnerCard ? StandingPictureType.Submission : null;
+            var isPartnerChosen = target.Kind == EffectTargetKind.PartnerCard
+                || (pairTargetUnitOrNull != null && pairTargetUnitOrNull.IsPartner && pairTargetUnitOrNull.OwnerPlayerId == 0);
+            return isPartnerChosen ? StandingPictureType.Submission : null;
         }
 
         /// <summary>

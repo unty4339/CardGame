@@ -10,9 +10,9 @@ namespace CardBattle.UI
     public class FieldVisualizer : MonoBehaviour
     {
         [SerializeField] private RectTransform fieldAreaRect;
-        [SerializeField] private float unitSpacing = 90f;
-        [SerializeField] private int maxSlots = 7;
-        [SerializeField] private float layoutLerpSpeed = 8f;
+        private float unitSpacing = 130f;
+        private int maxSlots = 7;
+        private float layoutLerpSpeed = 8f;
 
         private readonly List<UnitView> _units = new();
         private readonly List<Vector3> _targetLocalPositions = new();
