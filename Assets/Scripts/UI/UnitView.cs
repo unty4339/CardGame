@@ -60,24 +60,34 @@ namespace CardBattle.UI
         private static readonly Color OutlineColorUnitOnly = Color.yellow;
         /// <summary>ユニットもプレイヤーも攻撃可能なときのアウトライン色（緑）</summary>
         private static readonly Color OutlineColorBoth = new Color(0.2f, 1f, 0.2f, 1f);
+        /// <summary>効果対象候補のアウトライン色（赤めのピンク）</summary>
+        private static readonly Color OutlineColorEffectTarget = new Color(1f, 0.25f, 0.45f, 1f);
 
         private void Update()
         {
             if (uiEffect != null)
             {
-                var gameFlow = GameFlowManager.Instance;
-                bool myTurn = Unit != null && gameFlow != null && gameFlow.CurrentTurnPlayerId == Unit.OwnerPlayerId;
-                bool canAttackUnit = Unit != null && Unit.CanAttackUnit;
-                bool canAttackPlayer = Unit != null && Unit.CanAttackPlayer;
-
-                if (myTurn && (canAttackUnit || canAttackPlayer))
+                if (_selectableForEffect)
                 {
-                    uiEffect.shadowFade = 0.1f;
-                    uiEffect.shadowColor = canAttackPlayer ? OutlineColorBoth : OutlineColorUnitOnly;
+                    uiEffect.shadowFade = 1f;
+                    uiEffect.shadowColor = OutlineColorEffectTarget;
                 }
                 else
                 {
-                    uiEffect.shadowFade = 0f;
+                    var gameFlow = GameFlowManager.Instance;
+                    bool myTurn = Unit != null && gameFlow != null && gameFlow.CurrentTurnPlayerId == Unit.OwnerPlayerId;
+                    bool canAttackUnit = Unit != null && Unit.CanAttackUnit;
+                    bool canAttackPlayer = Unit != null && Unit.CanAttackPlayer;
+
+                    if (myTurn && (canAttackUnit || canAttackPlayer))
+                    {
+                        uiEffect.shadowFade = 0.1f;
+                        uiEffect.shadowColor = canAttackPlayer ? OutlineColorBoth : OutlineColorUnitOnly;
+                    }
+                    else
+                    {
+                        uiEffect.shadowFade = 0f;
+                    }
                 }
             }
         }

@@ -51,11 +51,6 @@ namespace CardBattle.Managers
                 Debug.Log("[EffectResolver] early return: not player 0");
                 return Task.FromResult(choices[0]);
             }
-            if (choices.Count == 1)
-            {
-                Debug.Log("[EffectResolver] early return: only 1 choice");
-                return Task.FromResult(choices[0]);
-            }
 
             Debug.Log("[EffectResolver] entering UI target selection");
             _currentActingPlayerId = actingPlayerId;
@@ -79,7 +74,6 @@ namespace CardBattle.Managers
                             ?? gvm.GetUnitViewByInstanceId(opponentId, choice.UnitInstanceId.Value);
                         if (view != null)
                         {
-                            view.SetHighlight(true);
                             view.SetSelectableForEffect(true);
                         }
                     }
@@ -94,7 +88,6 @@ namespace CardBattle.Managers
                     foreach (var view in myField.GetUnitViews())
                     {
                         if (view == null) continue;
-                        view.SetGrayedOut(true);
                         view.SetSelectableForEffect(false);
                     }
                 }
@@ -114,7 +107,6 @@ namespace CardBattle.Managers
                         }
                         if (!isHighlighted)
                         {
-                            view.SetGrayedOut(true);
                             view.SetSelectableForEffect(false);
                         }
                     }

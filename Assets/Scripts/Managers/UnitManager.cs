@@ -239,7 +239,7 @@ namespace CardBattle.Managers
             }
 
             var resolver = EffectResolver.Instance;
-            var needTargetSelection = resolver != null && ownerPlayerId == 0 && choices.Count > 1;
+            var needTargetSelection = resolver != null && ownerPlayerId == 0 && choices.Count >= 1;
             EffectTarget target;
             if (needTargetSelection)
                 target = resolver.RequestTargetAsync(choices, ownerPlayerId).GetAwaiter().GetResult();
@@ -367,7 +367,7 @@ namespace CardBattle.Managers
             }
 
             var resolver = EffectResolver.Instance;
-            var needTargetSelection = resolver != null && ownerPlayerId == 0 && choices.Count > 1;
+            var needTargetSelection = resolver != null && ownerPlayerId == 0 && choices.Count >= 1;
             EffectTarget target;
             if (needTargetSelection)
             {
@@ -435,7 +435,7 @@ namespace CardBattle.Managers
             }
 
             var resolver = EffectResolver.Instance;
-            var needTargetSelection = resolver != null && ownerId == 0 && choices.Count > 1;
+            var needTargetSelection = resolver != null && ownerId == 0 && choices.Count >= 1;
 
             if (needTargetSelection)
             {

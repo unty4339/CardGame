@@ -4,6 +4,7 @@ using CardBattle.Core.Effects;
 using CardBattle.Core.Enums;
 using CardBattle.Core.Partner;
 using CardBattle.Managers;
+using Coffee.UIEffects;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -22,6 +23,10 @@ namespace CardBattle.UI
         [SerializeField] private TextMeshProUGUI attack;
         [SerializeField] private TextMeshProUGUI hp;
         [SerializeField] private CanvasGroup canvasGroup;
+        [SerializeField] private UIEffect uiEffect;
+
+        /// <summary>効果対象候補のアウトライン色（赤めのピンク）。UnitView と同一。</summary>
+        private static readonly Color OutlineColorEffectTarget = new Color(1f, 0.25f, 0.45f, 1f);
 
         private RectTransform _rectTransform;
         private Canvas _canvas;
@@ -106,6 +111,18 @@ namespace CardBattle.UI
         public void SetSelectableForEffect(bool selectable)
         {
             _selectableForEffect = selectable;
+            if (uiEffect != null)
+            {
+                if (selectable)
+                {
+                    uiEffect.shadowFade = 1f;
+                    uiEffect.shadowColor = OutlineColorEffectTarget;
+                }
+                else
+                {
+                    uiEffect.shadowFade = 0f;
+                }
+            }
         }
 
         public void OnPointerClick(PointerEventData eventData)
