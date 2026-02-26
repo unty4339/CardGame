@@ -32,8 +32,9 @@ namespace CardBattle.Editor
             var unitPrefab = GetOrCreateUnitViewPrefab();
             var partnerCardViewPrefab = GetOrCreatePartnerCardViewPrefab();
             var dialogueBlockPrefab = GetOrCreateDialogueBlockPrefab();
+            var promptPrefab = AssetDatabase.LoadAssetAtPath<GameObject>($"{PrefabsPath}/PromptPrefab.prefab");
 
-            WireReferences(root, gameSystems, canvasData, cardPrefab, unitPrefab, partnerCardViewPrefab, dialogueBlockPrefab);
+            WireReferences(root, gameSystems, canvasData, cardPrefab, unitPrefab, partnerCardViewPrefab, dialogueBlockPrefab, promptPrefab);
             EnsureCameraAndEventSystem(root);
 
             EditorSceneManager.MarkSceneDirty(UnityEngine.SceneManagement.SceneManager.GetActiveScene());
@@ -314,7 +315,7 @@ namespace CardBattle.Editor
             rect.offsetMin = Vector2.zero;
             rect.offsetMax = new Vector2(500f, 0f);
             go.AddComponent<CardBattle.UI.StandingPictureManager>();
-            go.transform.SetSiblingIndex(0); // 最前面に配置
+            go.transform.SetSiblingIndex(8); // 最前面に配置
         }
 
         private static void CreateCardDescriptionPanel(Transform canvasTransform)
@@ -800,7 +801,7 @@ namespace CardBattle.Editor
         }
 
         private static void WireReferences(GameObject root, GameObject gameSystems, CanvasData canvasData,
-            CardView cardPrefab, UnitView unitPrefab, PartnerCardView partnerCardViewPrefab, DialogueBlock dialogueBlockPrefab)
+            CardView cardPrefab, UnitView unitPrefab, PartnerCardView partnerCardViewPrefab, DialogueBlock dialogueBlockPrefab, GameObject promptPrefab)
         {
             var gameVisualManager = gameSystems.GetComponent<GameVisualManager>();
 
@@ -818,6 +819,10 @@ namespace CardBattle.Editor
             gvmSo.FindProperty("partnerZoneAnchorPlayer0").objectReferenceValue = canvasData.PartnerZoneAnchorPlayer0;
             gvmSo.FindProperty("partnerZoneAnchorPlayer1").objectReferenceValue = canvasData.PartnerZoneAnchorPlayer1;
             gvmSo.FindProperty("partnerCardViewPrefab").objectReferenceValue = partnerCardViewPrefab;
+            if (promptPrefab != null)
+                gvmSo.FindProperty("targetSelectionPromptPrefab").objectReferenceValue = promptPrefab;
+            else
+                Debug.LogWarning("[SceneSetupEditor] PromptPrefab not found at Assets/Prefabs/PromptPrefab.prefab. targetSelectionPromptPrefab will remain unassigned.");
             gvmSo.ApplyModifiedPropertiesWithoutUndo();
 
             var fv0So = new SerializedObject(canvasData.FieldVisualizerPlayer0);

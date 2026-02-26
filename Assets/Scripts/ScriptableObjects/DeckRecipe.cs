@@ -30,16 +30,16 @@ namespace CardBattle.ScriptableObjects
             if (playerId == 0)
             {
                 // 自分のデッキ: パートナー（未来航士、リュシア）以外の追加カードを3枚ずつ
-                const int copies = 3;
-                entriesList.Add(new DeckRecipeEntry { Template = new GoblinUnitCard(), Count = copies });
-                entriesList.Add(new DeckRecipeEntry { Template = new GoblinSpearmanUnitCard(), Count = copies });
-                entriesList.Add(new DeckRecipeEntry { Template = new GoblinCavalryUnitCard(), Count = copies });
-                entriesList.Add(new DeckRecipeEntry { Template = new GoblinCommanderUnitCard(), Count = copies });
-                entriesList.Add(new DeckRecipeEntry { Template = new ForestBarbarianOgreUnitCard(), Count = 2 });
+                entriesList.Add(new DeckRecipeEntry { Template = new GrimskinNurseryTotemCard(), Count = 4 });
+                entriesList.Add(new DeckRecipeEntry { Template = new GoblinSpearmanUnitCard(), Count = 4 });
+                entriesList.Add(new DeckRecipeEntry { Template = new GoblinCavalryUnitCard(), Count = 3 });
+                entriesList.Add(new DeckRecipeEntry { Template = new GrimskinGreenLightSpellCard(), Count = 3 });
                 entriesList.Add(new DeckRecipeEntry { Template = new FleshArmorOgreUnitCard(), Count = 3 });
+                entriesList.Add(new DeckRecipeEntry { Template = new GoblinCommanderUnitCard(), Count = 3 });
+                entriesList.Add(new DeckRecipeEntry { Template = new ForestBarbarianOgreUnitCard(), Count = 2 });
                 entriesList.Add(new DeckRecipeEntry { Template = new GreenLightHeraldUnitCard(), Count = 2 });
-                entriesList.Add(new DeckRecipeEntry { Template = new GrimskinGreenLightSpellCard(), Count = copies });
-                entriesList.Add(new DeckRecipeEntry { Template = new GrimskinNurseryTotemCard(), Count = copies });
+                entriesList.Add(new DeckRecipeEntry { Template = new GoblinUnitCard(), Count = 1 });
+
             }
             else
             {

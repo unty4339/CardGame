@@ -705,8 +705,8 @@ namespace CardBattle.UI
                 rect.anchorMin = new Vector2(0.5f, 0.5f);
                 rect.anchorMax = new Vector2(0.5f, 0.5f);
                 rect.pivot = new Vector2(0.5f, 0.5f);
-                rect.offsetMin = Vector2.zero;
-                rect.offsetMax = Vector2.zero;
+                // rect.offsetMin = Vector2.zero;
+                // rect.offsetMax = Vector2.zero;
             }
             _targetSelectionPromptInstance.SetActive(true);
         }

@@ -544,7 +544,7 @@ MonoBehaviour:
   m_SrcBlendMode: 1
   m_DstBlendMode: 10
   m_ShadowMode: 3
-  m_ShadowDistance: {x: 1, y: -1}
+  m_ShadowDistance: {x: 3, y: -3}
   m_ShadowIteration: 5
   m_ShadowFade: 0
   m_ShadowMirrorScale: 0.5

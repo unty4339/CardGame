@@ -37,7 +37,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0.000030518, y: 0.000013351}
-  m_SizeDelta: {x: 449.5866, y: 66.6634}
+  m_SizeDelta: {x: 449.5866, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &3230669215270308660
 MonoBehaviour:
@@ -53,6 +53,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   hpText: {fileID: 0}
   mpText: {fileID: 0}
+  deckCountText: {fileID: 0}
 --- !u!222 &8053039250077210311
 CanvasRenderer:
   m_ObjectHideFlags: 0
