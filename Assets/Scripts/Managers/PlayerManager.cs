@@ -48,6 +48,11 @@ namespace CardBattle.Managers
         public event Action<Unit> OnUnitDestroyed;
 
         /// <summary>
+        /// ユニットが破壊されたときに発火する（原因付き）。DialogueManager の台詞出し分け用。
+        /// </summary>
+        public event Action<Unit, UnitDestroyReason> OnUnitDestroyedWithReason;
+
+        /// <summary>
         /// ユニットの攻撃力（表示・実効）が変わったときに発火する。UnitView の表示更新用。
         /// </summary>
         public event Action<Unit> OnUnitAttackChanged;
@@ -96,7 +101,16 @@ namespace CardBattle.Managers
         /// </summary>
         public void NotifyUnitDestroyed(Unit unit)
         {
+            NotifyUnitDestroyed(unit, UnitDestroyReason.Battle);
+        }
+
+        /// <summary>
+        /// ユニット破壊を通知する（原因付き）。台詞の出し分けに使用する。
+        /// </summary>
+        public void NotifyUnitDestroyed(Unit unit, UnitDestroyReason reason)
+        {
             OnUnitDestroyed?.Invoke(unit);
+            OnUnitDestroyedWithReason?.Invoke(unit, reason);
             if (unit != null && unit.IsPartner)
                 PartnerManager.Instance?.ReturnPartnerToZone(unit, unit.OwnerPlayerId);
         }
@@ -196,7 +210,12 @@ namespace CardBattle.Managers
         /// ユニットが場を離れる前にペアリング解除（OnUnpair 発動・参照クリア）を行い、続けて破壊通知する。
         /// 呼び出し元はこのメソッドの後に Units.Remove(unit) を行うこと。
         /// </summary>
-        public void UnpairIfNeededAndNotifyDestroyed(Unit unit) => PairingService.UnpairAndNotifyDestroyed(unit);
+        public void UnpairIfNeededAndNotifyDestroyed(Unit unit) => UnpairIfNeededAndNotifyDestroyed(unit, UnitDestroyReason.Battle);
+
+        /// <summary>
+        /// ユニットが場を離れる前にペアリング解除を行い、続けて破壊通知する（原因付き）。
+        /// </summary>
+        public void UnpairIfNeededAndNotifyDestroyed(Unit unit, UnitDestroyReason reason) => PairingService.UnpairAndNotifyDestroyed(unit, reason);
 
         /// <summary>
         /// 指定プレイヤー視点の GameState を組み立てる。ペアリング解除時の OnUnpair などで使用する。

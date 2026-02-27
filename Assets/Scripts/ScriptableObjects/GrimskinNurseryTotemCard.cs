@@ -70,12 +70,12 @@ namespace CardBattle.ScriptableObjects
                 if (pairTarget != null)
                 {
                     var pairTargetOwnerData = playerManager.GetPlayerData(pairTarget.OwnerPlayerId);
-                    playerManager.UnpairIfNeededAndNotifyDestroyed(pairTarget);
+                    playerManager.UnpairIfNeededAndNotifyDestroyed(pairTarget, UnitDestroyReason.Nursery);
                     pairTargetOwnerData?.FieldZone.Units.Remove(pairTarget);
                 }
             }
 
-            playerManager.UnpairIfNeededAndNotifyDestroyed(sourceUnit);
+            playerManager.UnpairIfNeededAndNotifyDestroyed(sourceUnit, UnitDestroyReason.Battle);
             data.FieldZone.Units.Remove(sourceUnit);
         }
     }

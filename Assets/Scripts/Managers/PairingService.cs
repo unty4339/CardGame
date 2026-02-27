@@ -63,14 +63,14 @@ namespace CardBattle.Managers
         /// ユニットが場を離れる前にペアリング解除（OnUnpair 発動・参照クリア）を行い、続けて破壊通知する。
         /// 呼び出し元はこのメソッドの後に Units.Remove(unit) を行うこと。
         /// </summary>
-        public static void UnpairAndNotifyDestroyed(Unit unit)
+        public static void UnpairAndNotifyDestroyed(Unit unit, UnitDestroyReason reason = UnitDestroyReason.Battle)
         {
             var pm = PlayerManager.Instance;
             if (pm == null) return;
 
             if (unit == null)
             {
-                pm.NotifyUnitDestroyed(unit);
+                pm.NotifyUnitDestroyed(unit, reason);
                 return;
             }
 
@@ -119,7 +119,7 @@ namespace CardBattle.Managers
             if (needPartnerSweating)
                 StandingPictureManager.Instance?.SetStandingPicture(StandingPictureType.Sweating);
 
-            pm.NotifyUnitDestroyed(unit);
+            pm.NotifyUnitDestroyed(unit, reason);
         }
 
         /// <summary>

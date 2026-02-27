@@ -32,7 +32,7 @@ namespace CardBattle.Battle
                 else
                 {
                     var pairTarget = defender.GetPairTargetUnitOrNull();
-                    playerManager?.UnpairIfNeededAndNotifyDestroyed(pairTarget);
+                    playerManager?.UnpairIfNeededAndNotifyDestroyed(pairTarget, UnitDestroyReason.Substitution);
                     defenderField.Units.Remove(pairTarget);
                 }
             }
@@ -41,7 +41,7 @@ namespace CardBattle.Battle
                 playerManager?.AddUnitHp(defender, -playerManager.GetEffectiveAttack(attacker));
                 if (defender.HP <= 0)
                 {
-                    playerManager?.UnpairIfNeededAndNotifyDestroyed(defender);
+                    playerManager?.UnpairIfNeededAndNotifyDestroyed(defender, UnitDestroyReason.Battle);
                     defenderField.Units.Remove(defender);
                 }
             }
@@ -58,7 +58,7 @@ namespace CardBattle.Battle
                 else
                 {
                     var pairTarget = attacker.GetPairTargetUnitOrNull();
-                    playerManager?.UnpairIfNeededAndNotifyDestroyed(pairTarget);
+                    playerManager?.UnpairIfNeededAndNotifyDestroyed(pairTarget, UnitDestroyReason.Substitution);
                     var fieldForPair = pairTarget.OwnerPlayerId == attacker.OwnerPlayerId ? attackerField : defenderField;
                     fieldForPair.Units.Remove(pairTarget);
                 }
@@ -68,7 +68,7 @@ namespace CardBattle.Battle
                 playerManager?.AddUnitHp(attacker, -defender.Attack);
                 if (attacker.HP <= 0)
                 {
-                    playerManager?.UnpairIfNeededAndNotifyDestroyed(attacker);
+                    playerManager?.UnpairIfNeededAndNotifyDestroyed(attacker, UnitDestroyReason.Battle);
                     attackerField.Units.Remove(attacker);
                 }
             }

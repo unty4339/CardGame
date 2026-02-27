@@ -375,26 +375,24 @@ namespace CardBattle.Managers
                 target = action.Target;
             }
 
+            // 破壊通知時に「攻撃者＝パートナー」を判定するため、攻撃解決の前に行動を記録する
+            var turnActionLog = TurnActionLog.Instance;
+            var gameFlowManager = GameFlowManager.Instance;
+            if (turnActionLog != null && gameFlowManager != null)
+                turnActionLog.RecordAction(action, gameFlowManager.CurrentTurnPlayerId);
+
             var gameVisual = GameVisualManager.Instance;
             if (gameVisual != null)
             {
                 gameVisual.PlayAttackAndResolve(attacker, target, () =>
                 {
                     battleManager?.ExecuteAttack(attacker, target);
-                    var turnActionLog = TurnActionLog.Instance;
-                    var gameFlowManager = GameFlowManager.Instance;
-                    if (turnActionLog != null && gameFlowManager != null)
-                        turnActionLog.RecordAction(action, gameFlowManager.CurrentTurnPlayerId);
                     NotifyActionAnimationCompleted();
                 });
             }
             else
             {
                 battleManager?.ExecuteAttack(attacker, target);
-                var turnActionLog = TurnActionLog.Instance;
-                var gameFlowManager = GameFlowManager.Instance;
-                if (turnActionLog != null && gameFlowManager != null)
-                    turnActionLog.RecordAction(action, gameFlowManager.CurrentTurnPlayerId);
                 NotifyActionAnimationCompleted();
             }
         }

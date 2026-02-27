@@ -15,8 +15,8 @@ namespace CardBattle.Managers
         private static PartnerManager _instance;
         public static PartnerManager Instance => _instance;
 
-        /// <summary>パートナーがユニットとしてフィールドに登場したときに発火する (playerId, unit)</summary>
-        public event Action<int, Unit> OnPartnerSummoned;
+        /// <summary>パートナーがユニットとしてフィールドに登場したときに発火する (playerId, unit, usedManaForEffect)</summary>
+        public event Action<int, Unit, bool> OnPartnerSummoned;
 
         /// <summary>パートナーがゾーンに戻ったときに発火する (playerId)</summary>
         public event Action<int> OnPartnerReturnedToZone;
@@ -102,9 +102,11 @@ namespace CardBattle.Managers
 
             PairingService.MigratePartnerCardPairingToUnit(unit, data.FieldZone);
 
+            var usedManaForEffect = false;
             // 登場時効果（未来航士、リュシア）: マナ1以上なら1消費・相手全体1ダメージ・破壊数分マナ回復（選択UIなし・常にこの効果）
             if (data.CurrentMP >= 1)
             {
+                usedManaForEffect = true;
                 data.CurrentMP -= 1;
                 int opponentId = 1 - playerId;
                 var oppData = playerManager.GetPlayerData(opponentId);
@@ -130,7 +132,7 @@ namespace CardBattle.Managers
                 playerManager.NotifyPlayerDataChanged(playerId);
             }
 
-            OnPartnerSummoned?.Invoke(playerId, unit);
+            OnPartnerSummoned?.Invoke(playerId, unit, usedManaForEffect);
             return true;
         }
 

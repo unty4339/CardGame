@@ -1,8 +1,10 @@
 using System.Collections.Generic;
+using System.Linq;
 using CardBattle.Core;
 using CardBattle.Core.Deck;
 using CardBattle.Core.Enums;
 using CardBattle.Core.Field;
+using CardBattle.Core.Player;
 using CardBattle.Dialogue;
 using CardBattle.UI;
 using UnityEngine;
@@ -25,6 +27,9 @@ namespace CardBattle.Managers
 
         private Color partnerFrameColor = new Color(0.6f, 0.75f, 1f, 0.95f);
 
+        /// <summary>ペアリングの効果対象にパートナーが選ばれた回数（台詞の出し分け用）。</summary>
+        private int _partnerPairingTargetCount;
+
         private void Awake()
         {
             if (_instance != null && _instance != this)
@@ -39,7 +44,7 @@ namespace CardBattle.Managers
         {
             var pm = PlayerManager.Instance;
             if (pm != null)
-                pm.OnUnitDestroyed += HandleUnitDestroyed;
+                pm.OnUnitDestroyedWithReason += HandleUnitDestroyedWithReason;
             var partnerManager = PartnerManager.Instance;
             if (partnerManager != null)
                 partnerManager.OnPartnerSummoned += OnPartnerPlayed;
@@ -49,7 +54,7 @@ namespace CardBattle.Managers
         {
             var pm = PlayerManager.Instance;
             if (pm != null)
-                pm.OnUnitDestroyed -= HandleUnitDestroyed;
+                pm.OnUnitDestroyedWithReason -= HandleUnitDestroyedWithReason;
             var partnerManager = PartnerManager.Instance;
             if (partnerManager != null)
                 partnerManager.OnPartnerSummoned -= OnPartnerPlayed;
@@ -57,10 +62,10 @@ namespace CardBattle.Managers
                 _instance = null;
         }
 
-        private void HandleUnitDestroyed(Unit unit)
+        private void HandleUnitDestroyedWithReason(Unit unit, UnitDestroyReason reason)
         {
             if (unit == null) return;
-            var data = GetDialogueForUnitDestroyed(unit);
+            var data = GetDialogueForUnitDestroyed(unit, reason);
             if (data is { } d)
                 AddBlockWithTurnActions(d);
         }
@@ -77,12 +82,12 @@ namespace CardBattle.Managers
         }
 
         /// <summary>
-        /// ユニットが破壊されたことをトリガーに台詞を表示する
+        /// ユニットが破壊されたことをトリガーに台詞を表示する（原因付き）。
         /// </summary>
-        public void OnUnitDestroyed(Unit unit)
+        public void OnUnitDestroyed(Unit unit, UnitDestroyReason reason)
         {
             if (unit == null) return;
-            var data = GetDialogueForUnitDestroyed(unit);
+            var data = GetDialogueForUnitDestroyed(unit, reason);
             if (data is { } d)
                 AddBlockWithTurnActions(d);
         }
@@ -121,18 +126,21 @@ namespace CardBattle.Managers
         /// <summary>
         /// パートナーカードがプレイされたときに呼ばれる。プレイヤー0のときのみ青枠で台詞を表示する。
         /// </summary>
-        public void OnPartnerPlayed(int playerId, Unit unit)
+        public void OnPartnerPlayed(int playerId, Unit unit, bool usedManaForEffect)
         {
             if (playerId != 0) return;
-            AddBlockWithTurnActions(new DialogueBlockData("よしっボクに任せて！", frameColorOverride: partnerFrameColor));
+            var text = GetPartnerPlayLine(_partnerPairingTargetCount, usedManaForEffect);
+            AddBlockWithTurnActions(new DialogueBlockData(text, frameColorOverride: partnerFrameColor));
         }
 
         /// <summary>
-        /// ペアリングの効果対象にパートナーカードが選ばれたときに呼ばれる。青枠で台詞を表示する。
+        /// ペアリングの効果対象にパートナーカードが選ばれたときに呼ばれる。青枠で台詞を表示し、回数をインクリメントする。
         /// </summary>
         public void OnPartnerChosenAsPairingTarget()
         {
-            AddBlockWithTurnActions(new DialogueBlockData("ぼっ、ボクなの！？", frameColorOverride: partnerFrameColor));
+            var text = GetPartnerChosenAsPairingTargetLine(_partnerPairingTargetCount);
+            AddBlockWithTurnActions(new DialogueBlockData(text, frameColorOverride: partnerFrameColor));
+            _partnerPairingTargetCount++;
         }
 
         private void AddBlockWithTurnActions(DialogueBlockData data)
@@ -189,28 +197,104 @@ namespace CardBattle.Managers
                 return null;
             }
 
-            return cardName switch
-            {
-                _ => null
-            };
+            if (card.Template?.CardType == CardType.Spell)
+                return new DialogueBlockData($"{cardName}を発動！", frameColorOverride: frameColor);
+
+            return null;
         }
 
         /// <summary>
         /// ユニット破壊時に表示する台詞を場合分けして返す。該当なしなら null。
         /// </summary>
-        private DialogueBlockData? GetDialogueForUnitDestroyed(Unit unit)
+        private DialogueBlockData? GetDialogueForUnitDestroyed(Unit unit, UnitDestroyReason reason)
         {
             if (unit == null) return null;
-            // ターンプレイヤーのユニットが破壊されたときは台詞を出さない
             var gfm = GameFlowManager.Instance;
-            if (gfm != null && unit.OwnerPlayerId == gfm.CurrentTurnPlayerId)
-                return null;
-            var unitName = unit.SourceCardTemplate?.CardName ?? unit.DisplayName ?? "ユニット";
-            var text = $"{unitName}を撃破！";
+            var turnPlayerId = gfm != null ? gfm.CurrentTurnPlayerId : 0;
+
+            // パートナー（プレイヤー0）が破壊されたときは原因・回数別の台詞
             if (unit.IsPartner && unit.OwnerPlayerId == 0)
+            {
+                var text = GetPartnerDestroyedLine(_partnerPairingTargetCount, reason);
                 return new DialogueBlockData(text, frameColorOverride: partnerFrameColor);
+            }
+
+            // ターンプレイヤーのユニットが破壊されたときは一般台詞を出さない（パートナーは上で処理済み）
+            if (unit.OwnerPlayerId == turnPlayerId)
+                return null;
+
+            // 相手ユニットが破壊された＝ターンプレイヤーが撃破。攻撃者がパートナーならパートナー台詞
+            var partnerKilledLine = GetPartnerKilledEnemyLineIfApplicable(unit);
+            if (partnerKilledLine != null)
+                return new DialogueBlockData(partnerKilledLine, frameColorOverride: partnerFrameColor);
+
+            var unitName = unit.SourceCardTemplate?.CardName ?? unit.DisplayName ?? "ユニット";
+            var destroyerIsSelf = (turnPlayerId == 0);
+            var line = destroyerIsSelf ? $"{unitName}を撃破！" : $"私が{unitName}を撃破！";
+            return new DialogueBlockData(line, frameColorOverride: GetFrameColorForPlayer(turnPlayerId));
+        }
+
+        private string GetPartnerPlayLine(int pairingCount, bool usedManaForEffect)
+        {
+            if (usedManaForEffect)
+            {
+                return pairingCount >= 2 ? "フォトンシュート！💛"
+                    : pairingCount == 1 ? "フォトンシュート！"
+                    : "食らえっ フォトンシュート！";
+            }
+            return pairingCount >= 2 ? "うう……💛　ま、任せて！💛"
+                : pairingCount == 1 ? "ぼ、ボクの出番だね！"
+                : "ボクの出番だね！";
+        }
+
+        private static string GetPartnerChosenAsPairingTargetLine(int pairingCount)
+        {
+            return pairingCount >= 2 ? "ぐう、う……！💛💛"
+                : pairingCount == 1 ? "まっ、また……！💛"
+                : "ぼっ、ボクなの……！？💛";
+        }
+
+        private string GetPartnerDestroyedLine(int pairingCount, UnitDestroyReason reason)
+        {
+            switch (reason)
+            {
+                case UnitDestroyReason.Battle:
+                    return pairingCount >= 2 ? "くうっ……！💛"
+                        : pairingCount == 1 ? "くうっ……！💛"
+                        : "くっ……！";
+                case UnitDestroyReason.Nursery:
+                    return pairingCount >= 2 ? "お、お……っ💛💛"
+                        : pairingCount == 1 ? "ほ、おひゅっ💛"
+                        : "くっ……！";
+                case UnitDestroyReason.Substitution:
+                    return "うぎゅっ！？💛";
+                default:
+                    return pairingCount >= 2 ? "くうっ……！💛"
+                        : pairingCount == 1 ? "くうっ……！💛"
+                        : "くっ……！";
+            }
+        }
+
+        private string GetPartnerKilledEnemyLineIfApplicable(Unit destroyedUnit)
+        {
+            var turnActions = TurnActionLog.Instance?.GetCurrentTurnActions();
+            if (turnActions == null || turnActions.Count == 0)
+                turnActions = TurnActionLog.Instance?.GetLastTurnActions();
+            if (turnActions == null || turnActions.Count == 0) return null;
+            var last = turnActions[turnActions.Count - 1];
+            if (last.ActionType != ActionType.Attack || last.TargetUnitInstanceId != destroyedUnit.InstanceId)
+                return null;
+            var attackerId = last.AttackerInstanceId;
+            if (attackerId == null) return null;
+            var pm = PlayerManager.Instance;
+            if (pm == null) return null;
             var turnPlayerId = GameFlowManager.Instance != null ? GameFlowManager.Instance.CurrentTurnPlayerId : 0;
-            return new DialogueBlockData(text, frameColorOverride: GetFrameColorForPlayer(turnPlayerId));
+            var data = pm.GetPlayerData(turnPlayerId);
+            var attacker = data?.FieldZone?.Units?.FirstOrDefault(u => u.InstanceId == attackerId.Value);
+            if (attacker == null || !attacker.IsPartner || attacker.OwnerPlayerId != 0)
+                return null;
+            var c = _partnerPairingTargetCount;
+            return c >= 2 ? "よ、よしっ！💛" : c == 1 ? "よしっ倒した……！" : "よしっ！ 一体倒したよ！";
         }
 
         /// <summary>
@@ -226,11 +310,12 @@ namespace CardBattle.Managers
         }
 
         /// <summary>
-        /// ターン開始時に表示する台詞を返す。
+        /// ターン開始時に表示する台詞を返す。自分は「俺」、相手は「私」。
         /// </summary>
         private DialogueBlockData? GetDialogueForTurnStarted(int turnPlayerId)
         {
-            return new DialogueBlockData("俺のターン、ドロー", frameColorOverride: GetFrameColorForPlayer(turnPlayerId));
+            var text = turnPlayerId == 1 ? "私のターン、ドロー" : "俺のターン、ドロー";
+            return new DialogueBlockData(text, frameColorOverride: GetFrameColorForPlayer(turnPlayerId));
         }
 
         /// <summary>
@@ -238,7 +323,8 @@ namespace CardBattle.Managers
         /// </summary>
         private DialogueBlockData? GetDialogueForTurnEnded(int turnPlayerId)
         {
-            return new DialogueBlockData("ターンエンド！", frameColorOverride: GetFrameColorForPlayer(turnPlayerId));
+            var text = turnPlayerId == 1 ? "私のターンエンド！" : "ターンエンド！";
+            return new DialogueBlockData(text, frameColorOverride: GetFrameColorForPlayer(turnPlayerId));
         }
     }
 }

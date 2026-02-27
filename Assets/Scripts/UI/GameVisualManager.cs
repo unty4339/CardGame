@@ -339,7 +339,7 @@ namespace CardBattle.UI
         }
 
         /// <summary>パートナーがユニットとして召喚されたとき、カードを上に消す演出とユニットを上から出現させる演出を再生する。</summary>
-        private void OnPartnerSummoned(int playerId, Unit unit)
+        private void OnPartnerSummoned(int playerId, Unit unit, bool usedManaForEffect)
         {
             var fieldV = playerId == 0 ? fieldVisualizerPlayer0 : fieldVisualizerPlayer1;
             if (unitPrefab == null || fieldV == null) return;

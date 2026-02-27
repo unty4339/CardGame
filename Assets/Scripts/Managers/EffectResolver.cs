@@ -89,8 +89,18 @@ namespace CardBattle.Managers
                 {
                     foreach (var view in myField.GetUnitViews())
                     {
-                        if (view == null) continue;
-                        view.SetSelectableForEffect(false);
+                        if (view == null || view.Unit == null) continue;
+                        var isInChoices = false;
+                        foreach (var c in choices)
+                        {
+                            if (c.Kind == EffectTargetKind.Unit && c.UnitInstanceId == view.Unit.InstanceId)
+                            {
+                                isInChoices = true;
+                                break;
+                            }
+                        }
+                        if (!isInChoices)
+                            view.SetSelectableForEffect(false);
                     }
                 }
                 if (oppField != null)
