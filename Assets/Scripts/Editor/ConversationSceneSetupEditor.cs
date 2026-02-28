@@ -29,17 +29,17 @@ namespace CardBattle.Editor
 
             WireConversationManager(managerGo.GetComponent<ConversationManager>(), canvasData, actorPrefab);
             EnsureCameraAndEventSystem(root);
-            CreateSampleScenario(root);
+            CreateOpeningScenario(root);
 
             EditorSceneManager.MarkSceneDirty(UnityEngine.SceneManagement.SceneManager.GetActiveScene());
         }
 
-        private static void CreateSampleScenario(GameObject root)
+        private static void CreateOpeningScenario(GameObject root)
         {
-            var go = new GameObject("SampleScenario");
-            Undo.RegisterCreatedObjectUndo(go, "Create SampleScenario");
+            var go = new GameObject("OpeningScenario");
+            Undo.RegisterCreatedObjectUndo(go, "Create OpeningScenario");
             go.transform.SetParent(root.transform, false);
-            go.AddComponent<SampleConversationScenario>();
+            go.AddComponent<OpeningScenario>();
         }
 
         private static GameObject EnsureRootClean()
@@ -58,6 +58,7 @@ namespace CardBattle.Editor
             public TextMeshProUGUI SpeakerNameText;
             public TextMeshProUGUI BodyText;
             public Transform ActorRoot;
+            public Transform ActorRootRight;
             public Image BackgroundImage;
         }
 
@@ -89,7 +90,7 @@ namespace CardBattle.Editor
             backgroundImg.enabled = false;
             backgroundGo.transform.SetAsFirstSibling();
 
-            // 立ち絵を置く親
+            // 立ち絵を置く親（画面左半分・リュシア用）
             var actorRootGo = new GameObject("ActorRoot");
             actorRootGo.transform.SetParent(canvasGo.transform, false);
             var actorRootRect = actorRootGo.AddComponent<RectTransform>();
@@ -98,6 +99,16 @@ namespace CardBattle.Editor
             actorRootRect.offsetMin = new Vector2(20, 20);
             actorRootRect.offsetMax = new Vector2(-20, -20);
             actorRootRect.pivot = new Vector2(0.5f, 0f);
+
+            // 立ち絵を置く親（画面右半分・ユウ用）
+            var actorRootRightGo = new GameObject("ActorRootRight");
+            actorRootRightGo.transform.SetParent(canvasGo.transform, false);
+            var actorRootRightRect = actorRootRightGo.AddComponent<RectTransform>();
+            actorRootRightRect.anchorMin = new Vector2(0.5f, 0f);
+            actorRootRightRect.anchorMax = new Vector2(1f, 1f);
+            actorRootRightRect.offsetMin = new Vector2(20, 20);
+            actorRootRightRect.offsetMax = new Vector2(-20, -20);
+            actorRootRightRect.pivot = new Vector2(0.5f, 0f);
 
             // 台詞エリア（下段）
             var dialoguePanelGo = new GameObject("DialoguePanel");
@@ -117,7 +128,7 @@ namespace CardBattle.Editor
             speakerRect.anchorMin = new Vector2(0f, 0.75f);
             speakerRect.anchorMax = new Vector2(1f, 1f);
             speakerRect.offsetMin = new Vector2(30, 4);
-            speakerRect.offsetMax = new Vector2(-30, -4);
+            speakerRect.offsetMax = new Vector2(-30, -15);
             var speakerTmp = speakerGo.AddComponent<TextMeshProUGUI>();
             ApplyDefaultTmpStyle(speakerTmp);
             speakerTmp.text = "";
@@ -136,7 +147,7 @@ namespace CardBattle.Editor
             var bodyTmp = bodyGo.AddComponent<TextMeshProUGUI>();
             ApplyDefaultTmpStyle(bodyTmp);
             bodyTmp.text = "";
-            bodyTmp.fontSize = 35;
+            bodyTmp.fontSize = 32;
             bodyTmp.overflowMode = TextOverflowModes.Overflow;
             bodyTmp.textWrappingMode = TextWrappingModes.Normal;
 
@@ -145,6 +156,7 @@ namespace CardBattle.Editor
                 SpeakerNameText = speakerTmp,
                 BodyText = bodyTmp,
                 ActorRoot = actorRootGo.transform,
+                ActorRootRight = actorRootRightGo.transform,
                 BackgroundImage = backgroundImg
             };
         }
@@ -172,6 +184,7 @@ namespace CardBattle.Editor
             so.FindProperty("speakerNameText").objectReferenceValue = canvasData.SpeakerNameText;
             so.FindProperty("bodyText").objectReferenceValue = canvasData.BodyText;
             so.FindProperty("actorRoot").objectReferenceValue = canvasData.ActorRoot;
+            so.FindProperty("actorRootRight").objectReferenceValue = canvasData.ActorRootRight;
             so.FindProperty("actorPrefab").objectReferenceValue = actorPrefab;
             so.FindProperty("backgroundImage").objectReferenceValue = canvasData.BackgroundImage;
             so.ApplyModifiedPropertiesWithoutUndo();

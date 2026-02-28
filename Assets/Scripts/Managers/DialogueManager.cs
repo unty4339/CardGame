@@ -270,7 +270,7 @@ namespace CardBattle.Managers
         {
             return pairingCount >= 2 ? "うう～…♥"
                 : pairingCount == 1 ? "まっ、また…！？♥"
-                : "ぼっ、ボクなの…！？";
+                : "やっ、やっぱりボクなの！？";
         }
 
         /// <summary>

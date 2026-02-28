@@ -15,7 +15,6 @@ namespace CardBattle.Conversation
     public class ConversationManager : MonoBehaviour
     {
         private const string BackgroundImagesPath = "Assets/Images/";
-        private const string BackgroundExtension = ".jpg";
 
         public static ConversationManager Instance { get; private set; }
 
@@ -23,6 +22,7 @@ namespace CardBattle.Conversation
         [SerializeField] private TextMeshProUGUI speakerNameText;
         [SerializeField] private TextMeshProUGUI bodyText;
         [SerializeField] private Transform actorRoot;
+        [SerializeField] private Transform actorRootRight;
         [SerializeField] private StandingPictureActor actorPrefab;
         [SerializeField] private Image backgroundImage;
 
@@ -49,6 +49,7 @@ namespace CardBattle.Conversation
 
         /// <summary>
         /// 指定したIDの立ち絵アクターを取得する。なければプレハブから生成して登録する。
+        /// リュシアは画面左側、ユウは画面右側のルートに配置する。
         /// </summary>
         public StandingPictureActor GetActor(string actorId)
         {
@@ -61,7 +62,11 @@ namespace CardBattle.Conversation
                 return null;
             }
 
-            var newActor = Instantiate(actorPrefab, actorRoot);
+            Transform parent = actorRoot;
+            if (actorId == "ユウ" && actorRootRight != null)
+                parent = actorRootRight;
+
+            var newActor = Instantiate(actorPrefab, parent);
             newActor.name = $"Actor_{actorId}";
             _actors[actorId] = newActor;
             return newActor;
@@ -96,6 +101,9 @@ namespace CardBattle.Conversation
             if (speakerNameText != null)
                 speakerNameText.text = speaker ?? string.Empty;
             SetBodyText("");
+
+            // 前の台詞で「次へ」に使った離しが同じフレームでスキップ扱いされないよう1フレーム消費する
+            yield return null;
 
             text ??= string.Empty;
             float interval = Mathf.Max(0.01f, secondsPerCharacter);
@@ -133,16 +141,86 @@ namespace CardBattle.Conversation
         }
 
         /// <summary>
-        /// 背景キー（例: "背景1"）を Addressables のアドレス（例: "Assets/Images/背景1.jpg"）に変換する。
+        /// 背景キー（例: "背景1"）を Addressables のアドレスに変換する。.jpg を返す。
         /// </summary>
-        private static string ToBackgroundAddress(string key)
+        private static string ToBackgroundAddressJpg(string key)
         {
-            return string.IsNullOrEmpty(key) ? "" : BackgroundImagesPath + key.Trim() + BackgroundExtension;
+            return string.IsNullOrEmpty(key) ? "" : BackgroundImagesPath + key.Trim() + ".jpg";
+        }
+
+        /// <summary>
+        /// 背景キーから .png の Addressables アドレスを返す。
+        /// </summary>
+        private static string ToBackgroundAddressPng(string key)
+        {
+            return string.IsNullOrEmpty(key) ? "" : BackgroundImagesPath + key.Trim() + ".png";
+        }
+
+        /// <summary>
+        /// 指定したアドレスでスプライトをロードする。完了まで待機。Texture2D にフォールバックする。
+        /// </summary>
+        private IEnumerator LoadBackgroundSpriteAsync(string address, System.Action<Sprite> setResult)
+        {
+            Sprite loadedSprite = null;
+            var am = AddressableManager.Instance;
+            if (am == null)
+            {
+                setResult(null);
+                yield break;
+            }
+
+            Task<Sprite> spriteTask = null;
+            try
+            {
+                spriteTask = am.LoadAssetAsync<Sprite>(address);
+            }
+            catch (Exception)
+            {
+                // Sprite で見つからない場合は Texture2D で試す
+            }
+
+            if (spriteTask != null)
+            {
+                yield return new WaitUntil(() => spriteTask.IsCompleted);
+                if (spriteTask.Status == TaskStatus.RanToCompletion && spriteTask.Result != null)
+                    loadedSprite = spriteTask.Result;
+            }
+
+            if (loadedSprite == null)
+            {
+                Task<Texture2D> textureTask = null;
+                try
+                {
+                    textureTask = am.LoadAssetAsync<Texture2D>(address);
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogWarning($"[ConversationManager] 背景のロードに失敗しました: {address}. {ex.Message}");
+                }
+                if (textureTask != null)
+                {
+                    yield return new WaitUntil(() => textureTask.IsCompleted);
+                    try
+                    {
+                        if (textureTask.Status == TaskStatus.RanToCompletion && textureTask.Result != null)
+                        {
+                            var tex = textureTask.Result;
+                            loadedSprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f));
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.LogWarning($"[ConversationManager] 背景の処理に失敗しました: {address}. {ex.Message}");
+                    }
+                }
+            }
+
+            setResult(loadedSprite);
         }
 
         /// <summary>
         /// 指定したキーの背景を Addressables でロードして表示する。完了まで待機可能。
-        /// キー例: "背景1" → "Assets/Images/背景1.jpg" をロードする。
+        /// キー例: "背景1" → "Assets/Images/背景1.jpg" を試し、失敗時は "背景2" → "Assets/Images/背景2.png" も試す。
         /// </summary>
         public IEnumerator SetBackgroundAndWait(string key)
         {
@@ -156,56 +234,14 @@ namespace CardBattle.Conversation
                 yield break;
             }
 
-            string address = ToBackgroundAddress(key);
             Sprite loadedSprite = null;
-            var am = AddressableManager.Instance;
-            if (am != null)
+            string addressJpg = ToBackgroundAddressJpg(key);
+            yield return LoadBackgroundSpriteAsync(addressJpg, s => loadedSprite = s);
+
+            if (loadedSprite == null)
             {
-                Task<Sprite> spriteTask = null;
-                try
-                {
-                    spriteTask = am.LoadAssetAsync<Sprite>(address);
-                }
-                catch (Exception)
-                {
-                    // Sprite で見つからない場合は Texture2D で試す
-                }
-
-                if (spriteTask != null)
-                {
-                    yield return new WaitUntil(() => spriteTask.IsCompleted);
-                    if (spriteTask.Status == TaskStatus.RanToCompletion && spriteTask.Result != null)
-                        loadedSprite = spriteTask.Result;
-                }
-
-                if (loadedSprite == null)
-                {
-                    Task<Texture2D> textureTask = null;
-                    try
-                    {
-                        textureTask = am.LoadAssetAsync<Texture2D>(address);
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.LogWarning($"[ConversationManager] 背景のロードに失敗しました: {address}. {ex.Message}");
-                    }
-                    if (textureTask != null)
-                    {
-                        yield return new WaitUntil(() => textureTask.IsCompleted);
-                        try
-                        {
-                            if (textureTask.Status == TaskStatus.RanToCompletion && textureTask.Result != null)
-                            {
-                                var tex = textureTask.Result;
-                                loadedSprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f));
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            Debug.LogWarning($"[ConversationManager] 背景の処理に失敗しました: {address}. {ex.Message}");
-                        }
-                    }
-                }
+                string addressPng = ToBackgroundAddressPng(key);
+                yield return LoadBackgroundSpriteAsync(addressPng, s => loadedSprite = s);
             }
 
             if (loadedSprite != null)

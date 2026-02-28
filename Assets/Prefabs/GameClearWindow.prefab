@@ -431,7 +431,7 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1760318492317534182}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -441,7 +441,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -94.000015, y: -125.3}
+  m_AnchoredPosition: {x: -93.999985, y: -125.3}
   m_SizeDelta: {x: 160, y: 30}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &6121231015658555938
@@ -528,7 +528,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 1060146267549077281}
         m_TargetAssemblyTypeName: CardBattle.UI.GameClearWindow, Assembly-CSharp
-        m_MethodName: SetStandingPictureSweating
+        m_MethodName: SetStandingPictureOgre
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -574,14 +574,14 @@ RectTransform:
   - {fileID: 8439523995937112398}
   - {fileID: 2677347622301337012}
   - {fileID: 5606362283271831531}
-  - {fileID: 7714641969579652184}
   - {fileID: 8699177873898639455}
+  - {fileID: 7714641969579652184}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 380, y: 300}
+  m_SizeDelta: {x: 450, y: 300}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &1783430309647629362
 CanvasRenderer:
@@ -892,7 +892,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 1060146267549077281}
         m_TargetAssemblyTypeName: CardBattle.UI.GameClearWindow, Assembly-CSharp
-        m_MethodName: SetStandingPictureRiding
+        m_MethodName: SetStandingPictureBack
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -1025,7 +1025,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 1060146267549077281}
         m_TargetAssemblyTypeName: CardBattle.UI.GameClearWindow, Assembly-CSharp
-        m_MethodName: SetStandingPictureRestraint
+        m_MethodName: SetStandingPictureEmbarrassed
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -1563,7 +1563,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 1060146267549077281}
         m_TargetAssemblyTypeName: CardBattle.UI.GameClearWindow, Assembly-CSharp
-        m_MethodName: SetStandingPictureSubmission
+        m_MethodName: SetStandingPictureRiding
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -1607,8 +1607,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -0.000011742, y: 87.8}
-  m_SizeDelta: {x: 349.5, y: 90.864}
+  m_AnchoredPosition: {x: -15.761791, y: 88.87468}
+  m_SizeDelta: {x: 381.0236, y: 93.0133}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &8437897293067006916
 CanvasRenderer:
@@ -1638,7 +1638,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u30B2\u30FC\u30E0\u30AF\u30EA\u30A2\n\n\u30D7\u30EC\u30A4\u3057\u3066\u304F\u308C\u3066\u3042\u308A\u304C\u3068\u3046\n\u611F\u60F3\u3092\u304F\u308C\u308B\u3068\u559C\u3073\u307E\u3059"
+  m_text: "\u30B2\u30FC\u30E0\u7D42\u4E86\n\u30D7\u30EC\u30A4\u3057\u3066\u304F\u308C\u3066\u3042\u308A\u304C\u3068\u3046\n\u611F\u60F3\u3092\u304F\u308C\u308B\u3068\u559C\u3073\u307E\u3059"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 2093ec82ca7624442841f9ee25cb7e70, type: 2}
   m_sharedMaterial: {fileID: -9062753294728194275, guid: 2093ec82ca7624442841f9ee25cb7e70, type: 2}
@@ -1665,8 +1665,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 15
-  m_fontSizeBase: 15
+  m_fontSize: 20
+  m_fontSizeBase: 20
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18

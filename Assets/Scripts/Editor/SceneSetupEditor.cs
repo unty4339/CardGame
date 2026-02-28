@@ -475,7 +475,7 @@ namespace CardBattle.Editor
             textRect.offsetMin = Vector2.zero;
             textRect.offsetMax = Vector2.zero;
             var text = textGo.AddComponent<Text>();
-            text.text = "通常";
+            text.text = "通常速度";
             text.fontSize = 16;
             text.alignment = TextAnchor.MiddleCenter;
         }

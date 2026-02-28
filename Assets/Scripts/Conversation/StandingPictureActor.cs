@@ -14,13 +14,19 @@ namespace CardBattle.Conversation
         [SerializeField] private Image uiImage;
         [SerializeField] private CanvasGroup canvasGroup;
 
+        private const float FadeInDuration = 0.15f;
+
         private RectTransform _rectTransform;
         private Vector2 _defaultPosition;
+        private string _lastShownSpriteKey;
 
         private void Awake()
         {
             _rectTransform = GetComponent<RectTransform>();
             _defaultPosition = _rectTransform.anchoredPosition;
+            // 立ち絵未設定時はデフォルトの白い Image を出さないため、初期状態でオフにする
+            if (uiImage != null)
+                uiImage.gameObject.SetActive(false);
         }
 
         /// <summary>
@@ -56,20 +62,33 @@ namespace CardBattle.Conversation
             }
 
             if (uiImage != null)
+            {
                 uiImage.sprite = loadedSprite;
+                uiImage.gameObject.SetActive(loadedSprite != null);
+            }
 
             if (canvasGroup != null)
             {
-                canvasGroup.alpha = 0f;
-                float time = 0f;
-                while (time < 0.3f)
+                bool sameAsBefore = _lastShownSpriteKey == spriteKey;
+                if (sameAsBefore)
                 {
-                    time += Time.deltaTime;
-                    canvasGroup.alpha = time / 0.3f;
-                    yield return null;
+                    canvasGroup.alpha = 1f;
                 }
-                canvasGroup.alpha = 1f;
+                else
+                {
+                    canvasGroup.alpha = 0f;
+                    float time = 0f;
+                    while (time < FadeInDuration)
+                    {
+                        time += Time.deltaTime;
+                        canvasGroup.alpha = time / FadeInDuration;
+                        yield return null;
+                    }
+                    canvasGroup.alpha = 1f;
+                }
             }
+
+            _lastShownSpriteKey = spriteKey;
         }
 
         /// <summary>
