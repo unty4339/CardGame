@@ -14,34 +14,52 @@ namespace CardBattle.UI
         /// </summary>
         public const string TargetSceneName = "TitleScene";
 
-        /// <summary>通常立ち絵に切り替える。ボタンの OnClick から呼ぶ。</summary>
+        /// <summary>通常に切り替える。ボタンの OnClick から呼ぶ。</summary>
         public void SetStandingPictureNormal()
         {
             StandingPictureManager.Instance?.SetStandingPicture(StandingPictureType.Normal);
         }
 
-        /// <summary>汗かき立ち絵に切り替える。ボタンの OnClick から呼ぶ。</summary>
-        public void SetStandingPictureSweating()
+        /// <summary>照れに切り替える。ボタンの OnClick から呼ぶ。</summary>
+        public void SetStandingPictureEmbarrassed()
         {
-            StandingPictureManager.Instance?.SetStandingPicture(StandingPictureType.Sweating);
+            StandingPictureManager.Instance?.SetStandingPicture(StandingPictureType.Embarrassed);
         }
 
-        /// <summary>屈服立ち絵に切り替える。ボタンの OnClick から呼ぶ。</summary>
-        public void SetStandingPictureSubmission()
+        /// <summary>焦りに切り替える。ボタンの OnClick から呼ぶ。</summary>
+        public void SetStandingPictureAnxious()
         {
-            StandingPictureManager.Instance?.SetStandingPicture(StandingPictureType.Submission);
+            StandingPictureManager.Instance?.SetStandingPicture(StandingPictureType.Anxious);
         }
 
-        /// <summary>拘束立ち絵に切り替える。ボタンの OnClick から呼ぶ。</summary>
-        public void SetStandingPictureRestraint()
+        /// <summary>銃構えに切り替える。ボタンの OnClick から呼ぶ。</summary>
+        public void SetStandingPictureGunStance()
         {
-            StandingPictureManager.Instance?.SetStandingPicture(StandingPictureType.Restraint);
+            StandingPictureManager.Instance?.SetStandingPicture(StandingPictureType.GunStance);
         }
 
-        /// <summary>騎乗立ち絵に切り替える。ボタンの OnClick から呼ぶ。</summary>
+        /// <summary>銃構え照れに切り替える。ボタンの OnClick から呼ぶ。</summary>
+        public void SetStandingPictureGunStanceEmbarrassed()
+        {
+            StandingPictureManager.Instance?.SetStandingPicture(StandingPictureType.GunStanceEmbarrassed);
+        }
+
+        /// <summary>ペアリング用・バックに切り替える。ボタンの OnClick から呼ぶ。</summary>
+        public void SetStandingPictureBack()
+        {
+            StandingPictureManager.Instance?.SetStandingPicture(StandingPictureType.Back);
+        }
+
+        /// <summary>ペアリング用・騎乗に切り替える。ボタンの OnClick から呼ぶ。</summary>
         public void SetStandingPictureRiding()
         {
             StandingPictureManager.Instance?.SetStandingPicture(StandingPictureType.Riding);
+        }
+
+        /// <summary>ペアリング用・オークに切り替える。ボタンの OnClick から呼ぶ。</summary>
+        public void SetStandingPictureOgre()
+        {
+            StandingPictureManager.Instance?.SetStandingPicture(StandingPictureType.Ogre);
         }
 
         /// <summary>

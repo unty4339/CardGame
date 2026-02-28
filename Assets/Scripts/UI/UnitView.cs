@@ -119,7 +119,16 @@ namespace CardBattle.UI
             CardDescriptionPanel.HideDescription();
             if (Unit == null || Unit.OwnerPlayerId != 0) return;
             var controller = AttackDragController.Instance;
-            if (controller == null || !controller.TryStartAttackDrag(this)) return;
+            if (controller == null || !controller.TryStartAttackDrag(this))
+            {
+                var gameFlow = GameFlowManager.Instance;
+                if (gameFlow != null && gameFlow.CurrentPhase == GamePhase.Normal
+                    && Unit != null
+                    && gameFlow.CurrentTurnPlayerId == Unit.OwnerPlayerId
+                    && !Unit.CanAttackUnit && !Unit.CanAttackPlayer)
+                    GamePromptView.Instance?.ShowFadingMessage("次ターンまで攻撃できません");
+                return;
+            }
 
             _isDraggingForAttack = true;
         }

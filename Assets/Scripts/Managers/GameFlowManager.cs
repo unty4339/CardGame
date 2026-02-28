@@ -180,13 +180,13 @@ namespace CardBattle.Managers
                 return;
             }
 
+            _currentTurnPlayer = turnPlayerId;
+
             playerManager.IncreaseMaxMP(turnPlayerId);
             playerManager.RestoreMP(turnPlayerId);
             playerManager.GrantAttackToAllUnits(turnPlayerId);
             playerManager.IncrementTurnsOnField(turnPlayerId);
             playerManager.RunTurnStartEffects(turnPlayerId);
-
-            _currentTurnPlayer = turnPlayerId;
 
             var turnActionLog = TurnActionLog.Instance;
             turnActionLog?.ClearForNewTurn(turnPlayerId);

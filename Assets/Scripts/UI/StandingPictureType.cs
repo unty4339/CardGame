@@ -8,19 +8,28 @@ namespace CardBattle.UI
     {
         public const string None = "";
 
-        /// <summary>通常立ち絵</summary>
-        public const string Normal = "Assets/Images/イラスト71.png";
+        /// <summary>通常</summary>
+        public const string Normal = "Assets/Images/Stand/通常.png";
 
-        /// <summary>汗かき</summary>
-        public const string Sweating = "Assets/Images/イラスト71b.png";
+        /// <summary>照れ</summary>
+        public const string Embarrassed = "Assets/Images/Stand/照れ.png";
 
-        /// <summary>屈服</summary>
-        public const string Submission = "Assets/Images/イラスト70.png";
+        /// <summary>焦り</summary>
+        public const string Anxious = "Assets/Images/Stand/焦り.png";
 
-        /// <summary>拘束</summary>
-        public const string Restraint = "Assets/Images/イラスト72.png";
+        /// <summary>銃構え</summary>
+        public const string GunStance = "Assets/Images/Stand/銃構え.png";
 
-        /// <summary>騎乗</summary>
-        public const string Riding = "Assets/Images/イラスト73.png";
+        /// <summary>銃構え照れ</summary>
+        public const string GunStanceEmbarrassed = "Assets/Images/Stand/銃構え照れ.png";
+
+        /// <summary>ペアリング用：バック</summary>
+        public const string Back = "Assets/Images/Stand/バック.png";
+
+        /// <summary>ペアリング用：騎乗</summary>
+        public const string Riding = "Assets/Images/Stand/騎乗.png";
+
+        /// <summary>ペアリング用：オーク</summary>
+        public const string Ogre = "Assets/Images/Stand/オーク.png";
     }
 }

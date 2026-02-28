@@ -292,7 +292,7 @@ namespace CardBattle.Editor
             Undo.RegisterCreatedObjectUndo(areaGo, "Create DialogueLogArea");
             areaGo.transform.SetParent(canvasTransform, false);
             var areaRect = areaGo.AddComponent<RectTransform>();
-            areaRect.anchorMin = new Vector2(0.73f, 0.2f);
+            areaRect.anchorMin = new Vector2(0.73f, 0.27f);
             areaRect.anchorMax = new Vector2(1f, 0.8f);
             areaRect.offsetMin = new Vector2(-10, 10);
             areaRect.offsetMax = new Vector2(-10, -10);

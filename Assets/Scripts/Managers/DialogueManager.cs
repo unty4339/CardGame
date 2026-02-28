@@ -30,6 +30,9 @@ namespace CardBattle.Managers
         /// <summary>ペアリングの効果対象にパートナーが選ばれた回数（台詞の出し分け用）。</summary>
         private int _partnerPairingTargetCount;
 
+        /// <summary>ペアリングの効果対象にパートナーが選ばれた回数（立ち絵切り替え等で参照）。</summary>
+        public int PartnerPairingTargetCount => _partnerPairingTargetCount;
+
         private void Awake()
         {
             if (_instance != null && _instance != this)
@@ -124,13 +127,17 @@ namespace CardBattle.Managers
         }
 
         /// <summary>
-        /// パートナーカードがプレイされたときに呼ばれる。プレイヤー0のときのみ青枠で台詞を表示する。
+        /// パートナーカードがプレイされたときに呼ばれる。プレイヤー0のときのみ青枠で台詞を表示し、立ち絵を銃構え/銃構え照れに切り替える。
         /// </summary>
         public void OnPartnerPlayed(int playerId, Unit unit, bool usedManaForEffect)
         {
             if (playerId != 0) return;
             var text = GetPartnerPlayLine(_partnerPairingTargetCount, usedManaForEffect);
             AddBlockWithTurnActions(new DialogueBlockData(text, frameColorOverride: partnerFrameColor));
+            if (PartnerPairingTargetCount == 0)
+                StandingPictureManager.Instance?.SetStandingPicture(StandingPictureType.GunStance);
+            else
+                StandingPictureManager.Instance?.SetStandingPicture(StandingPictureType.GunStanceEmbarrassed);
         }
 
         /// <summary>
@@ -141,6 +148,18 @@ namespace CardBattle.Managers
             var text = GetPartnerChosenAsPairingTargetLine(_partnerPairingTargetCount);
             AddBlockWithTurnActions(new DialogueBlockData(text, frameColorOverride: partnerFrameColor));
             _partnerPairingTargetCount++;
+        }
+
+        /// <summary>
+        /// ペアの相手ユニットが破壊され、パートナー（プレイヤー0）がペアリング対象から外れたときに呼ばれる。青枠で台詞を表示する。
+        /// </summary>
+        /// <param name="destroyedUnitCardName">破壊されたユニットのカード名（ペアの相手）</param>
+        /// <param name="reason">破壊理由（呼び出し元で渡す用。台詞出し分けに使用）</param>
+        public void OnPartnerRemovedFromPairing(string destroyedUnitCardName, UnitDestroyReason reason)
+        {
+            var text = GetPartnerRemovedFromPairingLine(_partnerPairingTargetCount, destroyedUnitCardName);
+            if (string.IsNullOrEmpty(text)) return;
+            AddBlockWithTurnActions(new DialogueBlockData(text, frameColorOverride: partnerFrameColor));
         }
 
         private void AddBlockWithTurnActions(DialogueBlockData data)
@@ -238,20 +257,33 @@ namespace CardBattle.Managers
         {
             if (usedManaForEffect)
             {
-                return pairingCount >= 2 ? "フォトンシュート！💛"
+                return pairingCount >= 2 ? "フォトンシュート！♥"
                     : pairingCount == 1 ? "フォトンシュート！"
                     : "食らえっ フォトンシュート！";
             }
-            return pairingCount >= 2 ? "うう……💛　ま、任せて！💛"
+            return pairingCount >= 2 ? "うう…♥　ま、任せて！♥"
                 : pairingCount == 1 ? "ぼ、ボクの出番だね！"
                 : "ボクの出番だね！";
         }
 
         private static string GetPartnerChosenAsPairingTargetLine(int pairingCount)
         {
-            return pairingCount >= 2 ? "ぐう、う……！💛💛"
-                : pairingCount == 1 ? "まっ、また……！💛"
-                : "ぼっ、ボクなの……！？💛";
+            return pairingCount >= 2 ? "うう～…♥"
+                : pairingCount == 1 ? "まっ、また…！？♥"
+                : "ぼっ、ボクなの…！？";
+        }
+
+        /// <summary>
+        /// ペアリング対象から外れたときに表示する台詞を、対象回数と破壊されたユニットのカード名で場合分けして返す。表示しない場合は null。
+        /// </summary>
+        private static string GetPartnerRemovedFromPairingLine(int pairingCount, string destroyedUnitCardName)
+        {
+            if (pairingCount == 0) return null;
+            if (pairingCount >= 2) return "はあ、はあっ…♥";
+            // pairingCount == 1
+            if (destroyedUnitCardName == "グリンスキンの苗床") return "お、お…っ♥♥";
+            if (destroyedUnitCardName == "ゴブリンの騎兵" || destroyedUnitCardName == "肉鎧のオーク") return "うぎゅっ！？♥";
+            return "ううっ…♥";
         }
 
         private string GetPartnerDestroyedLine(int pairingCount, UnitDestroyReason reason)
@@ -259,19 +291,19 @@ namespace CardBattle.Managers
             switch (reason)
             {
                 case UnitDestroyReason.Battle:
-                    return pairingCount >= 2 ? "くうっ……！💛"
-                        : pairingCount == 1 ? "くうっ……！💛"
-                        : "くっ……！";
+                    return pairingCount >= 2 ? "くうっ…！♥"
+                        : pairingCount == 1 ? "くうっ…！"
+                        : "くっ…！";
                 case UnitDestroyReason.Nursery:
-                    return pairingCount >= 2 ? "お、お……っ💛💛"
-                        : pairingCount == 1 ? "ほ、おひゅっ💛"
-                        : "くっ……！";
+                    return pairingCount >= 2 ? "くうっ…！♥"
+                        : pairingCount == 1 ? "お、お…っ♥♥"
+                        : "くっ…！";
                 case UnitDestroyReason.Substitution:
-                    return "うぎゅっ！？💛";
+                    return "うぎゅっ！？♥";
                 default:
-                    return pairingCount >= 2 ? "くうっ……！💛"
-                        : pairingCount == 1 ? "くうっ……！💛"
-                        : "くっ……！";
+                    return pairingCount >= 2 ? "くうっ…！♥"
+                        : pairingCount == 1 ? "くうっ…！"
+                        : "くっ…！";
             }
         }
 
@@ -294,7 +326,7 @@ namespace CardBattle.Managers
             if (attacker == null || !attacker.IsPartner || attacker.OwnerPlayerId != 0)
                 return null;
             var c = _partnerPairingTargetCount;
-            return c >= 2 ? "よ、よしっ！💛" : c == 1 ? "よしっ倒した……！" : "よしっ！ 一体倒したよ！";
+            return c >= 2 ? "よ、よしっ！♥" : c == 1 ? "よしっ倒した…！" : "よしっ！ 敵を倒したよ！";
         }
 
         /// <summary>

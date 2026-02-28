@@ -127,11 +127,37 @@ namespace CardBattle.Managers
         private void ProcessTurnEndAction()
         {
             var gameFlowManager = GameFlowManager.Instance;
-            if (gameFlowManager != null)
-                DialogueManager.Instance?.OnTurnEnded(gameFlowManager.CurrentTurnPlayerId);
+            if (gameFlowManager == null)
+            {
+                NotifyActionAnimationCompleted();
+                return;
+            }
+
+            var currentTurnPlayerId = gameFlowManager.CurrentTurnPlayerId;
+            DialogueManager.Instance?.OnTurnEnded(currentTurnPlayerId);
+
+            if (!_highSpeedMode && _aiActionDelaySeconds > 0f)
+            {
+                StartCoroutine(TurnEndAfterDelayCoroutine(currentTurnPlayerId));
+            }
+            else
+            {
+                CompleteTurnEnd(currentTurnPlayerId);
+            }
+        }
+
+        private IEnumerator TurnEndAfterDelayCoroutine(int turnPlayerId)
+        {
+            yield return new WaitForSeconds(_aiActionDelaySeconds);
+            CompleteTurnEnd(turnPlayerId);
+        }
+
+        private void CompleteTurnEnd(int turnPlayerId)
+        {
             TurnActionLog.Instance?.FinishTurn();
+            var gameFlowManager = GameFlowManager.Instance;
             if (gameFlowManager != null)
-                gameFlowManager.EndTurn(gameFlowManager.CurrentTurnPlayerId);
+                gameFlowManager.EndTurn(turnPlayerId);
             NotifyActionAnimationCompleted();
         }
 

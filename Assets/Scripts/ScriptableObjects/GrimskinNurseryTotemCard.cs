@@ -40,7 +40,7 @@ namespace CardBattle.ScriptableObjects
         {
             var isPartnerChosen = target.Kind == EffectTargetKind.PartnerCard
                 || (pairTargetUnitOrNull != null && pairTargetUnitOrNull.IsPartner && pairTargetUnitOrNull.OwnerPlayerId == 0);
-            return isPartnerChosen ? StandingPictureType.Submission : null;
+            return isPartnerChosen ? StandingPictureType.Back : null;
         }
 
         /// <summary>

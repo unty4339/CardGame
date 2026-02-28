@@ -32,7 +32,7 @@ namespace CardBattle.Conversation
             yield return new WaitForSeconds(0.3f);
 
             // --- 2人目表示 ---
-            yield return ogre.Show(StandingPictureType.Submission);
+            yield return ogre.Show(StandingPictureType.Embarrassed);
             rysia.SetFocus(false);
             ogre.SetFocus(true);
 

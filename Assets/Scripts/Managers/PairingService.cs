@@ -94,6 +94,8 @@ namespace CardBattle.Managers
             else if (unit.IsPairedWithUnit)
             {
                 var partner = unit.GetPairTargetUnitOrNull();
+                if (partner != null && partner.IsPartner && partner.OwnerPlayerId == 0)
+                    DialogueManager.Instance?.OnPartnerRemovedFromPairing(unit.SourceCardTemplate?.CardName ?? "", reason);
                 // 表示更新（NotifyUnitAttackChanged）が GetEffectiveAttack でペア解除済みと見えるよう、先に参照を外す。
                 unit.PairingTarget = null;
                 partner.PairingTarget = null;
@@ -117,7 +119,10 @@ namespace CardBattle.Managers
             }
 
             if (needPartnerSweating)
-                StandingPictureManager.Instance?.SetStandingPicture(StandingPictureType.Sweating);
+            {
+                var count = DialogueManager.Instance != null ? DialogueManager.Instance.PartnerPairingTargetCount : 0;
+                StandingPictureManager.Instance?.SetStandingPicture(count == 0 ? StandingPictureType.Normal : StandingPictureType.Embarrassed);
+            }
 
             pm.NotifyUnitDestroyed(unit, reason);
         }

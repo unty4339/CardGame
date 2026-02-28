@@ -119,6 +119,8 @@ namespace CardBattle.UI
                             break;
                         }
                     }
+                    if (actionToAdd == null)
+                        GamePromptView.Instance?.ShowFadingMessage("次ターンまでプレイヤーには攻撃できません");
                 }
             }
 

@@ -37,7 +37,7 @@ namespace CardBattle.ScriptableObjects
         {
             var isPartnerChosen = (target.Kind == EffectTargetKind.PartnerCard && target.PlayerId == 0)
                 || (pairTargetUnitOrNull != null && pairTargetUnitOrNull.IsPartner && pairTargetUnitOrNull.OwnerPlayerId == 0);
-            return isPartnerChosen ? StandingPictureType.Restraint : null;
+            return isPartnerChosen ? StandingPictureType.Ogre : null;
         }
     }
 }

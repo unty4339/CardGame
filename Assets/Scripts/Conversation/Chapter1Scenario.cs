@@ -31,7 +31,7 @@ namespace CardBattle.Conversation
             yield return CommentAndWait("リュシア", "今日はいい天気ですね！");
 
             // --- 3クリック目 ---
-            yield return ogre.Show(StandingPictureType.Submission);
+            yield return ogre.Show(StandingPictureType.Embarrassed);
 
             rysia.SetFocus(false);
             ogre.SetFocus(true);
