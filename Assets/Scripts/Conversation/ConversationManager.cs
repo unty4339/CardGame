@@ -1,16 +1,22 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.UI;
 
 namespace CardBattle.Conversation
 {
     /// <summary>
-    /// ノベル会話シーン全体を管理する。UIテキストの更新、立ち絵アクターの取得・生成、クリック待ちを提供する。
+    /// ノベル会話シーン全体を管理する。UIテキストの更新、立ち絵アクターの取得・生成、クリック待ち、背景表示を提供する。
     /// </summary>
     public class ConversationManager : MonoBehaviour
     {
+        private const string BackgroundImagesPath = "Assets/Images/";
+        private const string BackgroundExtension = ".jpg";
+
         public static ConversationManager Instance { get; private set; }
 
         [Header("UI References")]
@@ -18,6 +24,7 @@ namespace CardBattle.Conversation
         [SerializeField] private TextMeshProUGUI bodyText;
         [SerializeField] private Transform actorRoot;
         [SerializeField] private StandingPictureActor actorPrefab;
+        [SerializeField] private Image backgroundImage;
 
         [Header("Typewriter")]
         [SerializeField] private float secondsPerCharacter = 0.06f;
@@ -122,6 +129,89 @@ namespace CardBattle.Conversation
                 if (!ignoreNextRelease)
                     break;
                 ignoreNextRelease = false;
+            }
+        }
+
+        /// <summary>
+        /// 背景キー（例: "背景1"）を Addressables のアドレス（例: "Assets/Images/背景1.jpg"）に変換する。
+        /// </summary>
+        private static string ToBackgroundAddress(string key)
+        {
+            return string.IsNullOrEmpty(key) ? "" : BackgroundImagesPath + key.Trim() + BackgroundExtension;
+        }
+
+        /// <summary>
+        /// 指定したキーの背景を Addressables でロードして表示する。完了まで待機可能。
+        /// キー例: "背景1" → "Assets/Images/背景1.jpg" をロードする。
+        /// </summary>
+        public IEnumerator SetBackgroundAndWait(string key)
+        {
+            if (backgroundImage == null)
+                yield break;
+
+            if (string.IsNullOrEmpty(key))
+            {
+                backgroundImage.sprite = null;
+                backgroundImage.enabled = false;
+                yield break;
+            }
+
+            string address = ToBackgroundAddress(key);
+            Sprite loadedSprite = null;
+            var am = AddressableManager.Instance;
+            if (am != null)
+            {
+                Task<Sprite> spriteTask = null;
+                try
+                {
+                    spriteTask = am.LoadAssetAsync<Sprite>(address);
+                }
+                catch (Exception)
+                {
+                    // Sprite で見つからない場合は Texture2D で試す
+                }
+
+                if (spriteTask != null)
+                {
+                    yield return new WaitUntil(() => spriteTask.IsCompleted);
+                    if (spriteTask.Status == TaskStatus.RanToCompletion && spriteTask.Result != null)
+                        loadedSprite = spriteTask.Result;
+                }
+
+                if (loadedSprite == null)
+                {
+                    Task<Texture2D> textureTask = null;
+                    try
+                    {
+                        textureTask = am.LoadAssetAsync<Texture2D>(address);
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.LogWarning($"[ConversationManager] 背景のロードに失敗しました: {address}. {ex.Message}");
+                    }
+                    if (textureTask != null)
+                    {
+                        yield return new WaitUntil(() => textureTask.IsCompleted);
+                        try
+                        {
+                            if (textureTask.Status == TaskStatus.RanToCompletion && textureTask.Result != null)
+                            {
+                                var tex = textureTask.Result;
+                                loadedSprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f));
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Debug.LogWarning($"[ConversationManager] 背景の処理に失敗しました: {address}. {ex.Message}");
+                        }
+                    }
+                }
+            }
+
+            if (loadedSprite != null)
+            {
+                backgroundImage.sprite = loadedSprite;
+                backgroundImage.enabled = true;
             }
         }
 

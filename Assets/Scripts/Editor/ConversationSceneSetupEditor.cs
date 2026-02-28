@@ -58,6 +58,7 @@ namespace CardBattle.Editor
             public TextMeshProUGUI SpeakerNameText;
             public TextMeshProUGUI BodyText;
             public Transform ActorRoot;
+            public Image BackgroundImage;
         }
 
         private static ConversationCanvasData CreateConversationCanvas(GameObject root)
@@ -72,6 +73,21 @@ namespace CardBattle.Editor
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = new Vector2(1280, 720);
             canvasGo.AddComponent<GraphicRaycaster>();
+
+            // 背景（最背面・画面全体）
+            var backgroundGo = new GameObject("BackgroundImage");
+            backgroundGo.transform.SetParent(canvasGo.transform, false);
+            var backgroundRect = backgroundGo.AddComponent<RectTransform>();
+            backgroundRect.anchorMin = Vector2.zero;
+            backgroundRect.anchorMax = Vector2.one;
+            backgroundRect.offsetMin = Vector2.zero;
+            backgroundRect.offsetMax = Vector2.zero;
+            var backgroundImg = backgroundGo.AddComponent<Image>();
+            backgroundImg.color = Color.white;
+            backgroundImg.raycastTarget = false;
+            backgroundImg.sprite = null;
+            backgroundImg.enabled = false;
+            backgroundGo.transform.SetAsFirstSibling();
 
             // 立ち絵を置く親
             var actorRootGo = new GameObject("ActorRoot");
@@ -128,7 +144,8 @@ namespace CardBattle.Editor
             {
                 SpeakerNameText = speakerTmp,
                 BodyText = bodyTmp,
-                ActorRoot = actorRootGo.transform
+                ActorRoot = actorRootGo.transform,
+                BackgroundImage = backgroundImg
             };
         }
 
@@ -156,6 +173,7 @@ namespace CardBattle.Editor
             so.FindProperty("bodyText").objectReferenceValue = canvasData.BodyText;
             so.FindProperty("actorRoot").objectReferenceValue = canvasData.ActorRoot;
             so.FindProperty("actorPrefab").objectReferenceValue = actorPrefab;
+            so.FindProperty("backgroundImage").objectReferenceValue = canvasData.BackgroundImage;
             so.ApplyModifiedPropertiesWithoutUndo();
         }
 

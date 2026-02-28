@@ -40,6 +40,14 @@ namespace CardBattle.Conversation
         }
 
         /// <summary>
+        /// 背景を指定キーで表示する。キー例: "背景1" → Assets/Images/背景1.jpg を Addressables でロードする。完了まで待機可能。
+        /// </summary>
+        protected IEnumerator SetBackgroundAndWait(string key)
+        {
+            yield return Manager.SetBackgroundAndWait(key);
+        }
+
+        /// <summary>
         /// シナリオのメイン処理。継承先で yield return を使って会話の流れを記述する。
         /// </summary>
         public abstract IEnumerator RunScenario();
