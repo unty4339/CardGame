@@ -15,10 +15,10 @@ namespace CardBattle.ScriptableObjects
         {
             cardName = "緑光の主";
             playCost = 8;
-            baseHP = 6;
-            baseAttack = 3;
+            baseHP = 3;
+            baseAttack = 6;
             keywords.Add(KeywordAbility.DivineSpeed);
-            description = "超速攻\n登場時：相手のユニットをひとつ選ぶ。そのユニットを破壊する。";
+            description = "超速攻\n登場時：相手のユニットを1体選ぶ。それを破壊する。";
         }
 
         public IList<EffectTarget> GetAvailableTargets(GameState state, Unit sourceUnit)

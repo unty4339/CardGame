@@ -54,6 +54,10 @@ namespace CardBattle.Managers
             }
             GameVisualManager.Instance?.UpdatePartnerCardDraggable(unit.OwnerPlayerId);
 
+            // パートナー（プレイヤー0）がペアリングから外れたときの台詞（苗床・騎兵・オークなどで場合分け）
+            var otherCardName = unit.SourceCardTemplate?.CardName ?? "";
+            DialogueManager.Instance?.OnPartnerRemovedFromPairing(otherCardName, UnitDestroyReason.Battle);
+
             // パートナー選択時に変更した立ち絵を通常に戻す（プレイヤー0のユニットがペア解除した場合）
             if (unit.OwnerPlayerId == 0)
                 StandingPictureManager.Instance?.SetStandingPicture(StandingPictureType.Normal);

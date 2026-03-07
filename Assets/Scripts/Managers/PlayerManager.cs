@@ -319,6 +319,24 @@ namespace CardBattle.Managers
         }
 
         /// <summary>
+        /// デッキから1枚手札に加える（OnCardDrawn を発火しない）。マリガン用の初期ドローなどで使用。
+        /// </summary>
+        public bool DrawCardSilent(int playerId)
+        {
+            var data = GetPlayerData(playerId);
+            if (data == null) return false;
+
+            if (data.Deck.Cards.Count == 0)
+                return false;
+
+            var card = data.Deck.Cards[0];
+            data.Deck.Cards.RemoveAt(0);
+            data.Hand.Cards.Add(card);
+            NotifyPlayerDataChanged(playerId);
+            return true;
+        }
+
+        /// <summary>
         /// プレイヤーIDとカードを受け取り、そのカードをプレイしてユニットを召喚する。成功時は true、不成立時は false を返す。
         /// 召喚時効果の解決（対象選択含む）が完了したときに onPlayComplete を呼ぶ。非同期の場合は効果解決後に呼ばれる。
         /// preferredInstanceId が指定された場合、召喚ユニットにその InstanceId を付与する（AI シミュレーションとの統一用）。
@@ -505,7 +523,7 @@ namespace CardBattle.Managers
         }
 
         /// <summary>
-        /// マリガン：手札のカードをデッキに戻しシャッフルして引き直す
+        /// マリガン：手札のカードをデッキの底に戻し、同じ枚数だけ山札の上から引き直す
         /// </summary>
         public void Mulligan(int playerId, List<Card> cardsToReturn)
         {
@@ -517,8 +535,6 @@ namespace CardBattle.Managers
                 data.Hand.Cards.Remove(card);
                 data.Deck.Cards.Add(card);
             }
-
-            DeckBuilder.Shuffle(data.Deck.Cards);
 
             foreach (var _ in cardsToReturn)
             {

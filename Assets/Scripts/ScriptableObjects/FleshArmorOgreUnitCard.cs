@@ -16,8 +16,8 @@ namespace CardBattle.ScriptableObjects
         {
             cardName = "肉鎧のオーク";
             playCost = 7;
-            baseHP = 5;
-            baseAttack = 3;
+            baseHP = 3;
+            baseAttack = 5;
             description = "登場時：\nペアリング中でない、自分パートナーか体力1の相手ユニットとペアリングする。\nペアリング中：\nペア対象に「攻撃できない」を付与する。\nこのカードが戦闘を行うとき、ダメージを受ける代わりにペア対象を破壊する。";
         }
 

@@ -6,6 +6,7 @@ namespace CardBattle.Core.Enums
     public enum GamePhase
     {
         Normal,
-        TargetSelection
+        TargetSelection,
+        Mulligan
     }
 }

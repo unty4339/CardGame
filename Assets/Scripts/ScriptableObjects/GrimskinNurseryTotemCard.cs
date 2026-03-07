@@ -10,7 +10,7 @@ using UnityEngine;
 namespace CardBattle.ScriptableObjects
 {
     /// <summary>
-    /// グリンスキンの苗床。トーテム。発動時ペア・ペアリング中攻撃できない付与済み。ターン開始時：ゴブリン2枚手札に加え、ペア対象とこれを破壊。
+    /// グリンスキンの苗床。トーテム。発動時ペア・ペアリング中攻撃できない付与済み。ターン開始時：ゴブリン2枚手札に加え、これを破壊しペアリングを解除する。
     /// </summary>
     public class GrimskinNurseryTotemCard : TotemCardTemplateBase, IOnPairingEffect, IGrantsCannotAttackToPairTarget, IPairingStandingPicture, ITurnStartEffect
     {
@@ -18,7 +18,7 @@ namespace CardBattle.ScriptableObjects
         {
             cardName = "グリンスキンの苗床";
             playCost = 1;
-            description = "トーテム\n発動時：\nペアリング中でない、自分パートナーか体力1の相手ユニットとペアリングする。\nペアリング中：\nペア対象に「攻撃できない」を付与する。\n自分ターン開始時：\n「ゴブリン」2枚を手札に加え、ペア対象とこれを破壊する。";
+            description = "トーテム\n発動時：\nペアリング中でない、自分パートナーか体力1の相手ユニットとペアリングする。\nペアリング中：\nペア対象に「攻撃できない」を付与する。\n自分ターン開始時：\n「ゴブリン」2枚を手札に加え、これを破壊しペアリングを解除する。";
             totemData = ScriptableObject.CreateInstance<TotemData>();
         }
 
@@ -44,7 +44,7 @@ namespace CardBattle.ScriptableObjects
         }
 
         /// <summary>
-        /// ターン開始時：ゴブリン2枚手札に加え、ペア対象とこのトーテムを破壊する。ペア対象がパートナーカードの場合はペアリング解除のみ行う。
+        /// ターン開始時：ゴブリン2枚手札に加え、このトーテムを破壊しペアリングを解除する。ペア対象は破壊しない。
         /// </summary>
         public void Resolve(Unit sourceUnit, int turnPlayerId)
         {
@@ -64,18 +64,8 @@ namespace CardBattle.ScriptableObjects
             {
                 playerManager.UnpairPartnerCardOnly(sourceUnit);
             }
-            else
-            {
-                var pairTarget = sourceUnit.GetPairTargetUnitOrNull();
-                if (pairTarget != null)
-                {
-                    var pairTargetOwnerData = playerManager.GetPlayerData(pairTarget.OwnerPlayerId);
-                    playerManager.UnpairIfNeededAndNotifyDestroyed(pairTarget, UnitDestroyReason.Nursery);
-                    pairTargetOwnerData?.FieldZone.Units.Remove(pairTarget);
-                }
-            }
 
-            playerManager.UnpairIfNeededAndNotifyDestroyed(sourceUnit, UnitDestroyReason.Battle);
+            playerManager.UnpairIfNeededAndNotifyDestroyed(sourceUnit, UnitDestroyReason.Nursery);
             data.FieldZone.Units.Remove(sourceUnit);
         }
     }

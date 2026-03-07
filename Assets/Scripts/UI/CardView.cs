@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -16,7 +17,7 @@ namespace CardBattle.UI
     /// <summary>
     /// カード1枚の表示と、マウス操作（ドラッグおよびドロップ）の入力受け付けについて責任を持つ
     /// </summary>
-    public class CardView : MonoBehaviour, IDragHandler, IBeginDragHandler, IEndDragHandler, IPointerEnterHandler, IPointerExitHandler
+    public class CardView : MonoBehaviour, IDragHandler, IBeginDragHandler, IEndDragHandler, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
     {
         [SerializeField] private Image artwork;
         [SerializeField] private Image frameImage;
@@ -36,11 +37,19 @@ namespace CardBattle.UI
         public int OwnerPlayerId { get; set; }
 
         private HandVisualizer _handVisualizer;
+        private Vector3 _baseTargetLocalPosition;
         private Vector3 _targetLocalPosition;
         private bool _isDragging;
         private bool _hasTargetPosition;
         private bool _isOpponentHandCard;
+        private bool _mulliganSelected;
+        private float _mulliganSelectedOffsetY = 30f;
         private const float MoveLerpSpeed = 12f;
+
+        /// <summary>
+        /// クリック時に発火するコールバック（マリガン時などで使用）。未設定なら何もしない。
+        /// </summary>
+        public Action OnClicked;
 
         private void Awake()
         {
@@ -134,8 +143,30 @@ namespace CardBattle.UI
         /// </summary>
         public void SetTargetPosition(Vector3 localPosition)
         {
-            _targetLocalPosition = localPosition;
+            _baseTargetLocalPosition = localPosition;
+            _targetLocalPosition = _baseTargetLocalPosition + (_mulliganSelected ? Vector3.up * _mulliganSelectedOffsetY : Vector3.zero);
             _hasTargetPosition = true;
+        }
+
+        /// <summary>
+        /// マリガン時の選択状態。true のとき少し上にオフセット表示する。
+        /// </summary>
+        public void SetMulliganSelected(bool selected)
+        {
+            if (_mulliganSelected == selected) return;
+            _mulliganSelected = selected;
+            _targetLocalPosition = _baseTargetLocalPosition + (_mulliganSelected ? Vector3.up * _mulliganSelectedOffsetY : Vector3.zero);
+            _hasTargetPosition = true;
+        }
+
+        /// <summary>
+        /// マリガンで選択中かどうか
+        /// </summary>
+        public bool IsMulliganSelected => _mulliganSelected;
+
+        public void OnPointerClick(PointerEventData eventData)
+        {
+            OnClicked?.Invoke();
         }
 
         /// <summary>
@@ -208,6 +239,9 @@ namespace CardBattle.UI
 
         public void OnBeginDrag(PointerEventData eventData)
         {
+            var gameFlow = GameFlowManager.Instance;
+            if (gameFlow != null && gameFlow.CurrentPhase == GamePhase.Mulligan)
+                return;
             CardDescriptionPanel.HideDescription();
             _isDragging = true;
             if (canvasGroup != null) canvasGroup.blocksRaycasts = false;

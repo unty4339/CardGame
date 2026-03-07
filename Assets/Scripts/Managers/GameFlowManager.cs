@@ -35,6 +35,7 @@ namespace CardBattle.Managers
         public bool IsGameEnded => _gameEnded;
 
         private const string GameClearWindowAddress = "Assets/Prefabs/GameClearWindow.prefab";
+        private const string MulliganPanelAddress = "Assets/Prefabs/MulliganPanel.prefab";
 
         private int _firstPlayer;
         private int _currentTurnPlayer;
@@ -139,7 +140,10 @@ namespace CardBattle.Managers
 
                 for (var j = 0; j < 5; j++)
                 {
-                    playerManager.DrawCard(i);
+                    if (i == 0)
+                        playerManager.DrawCardSilent(i);
+                    else
+                        playerManager.DrawCard(i);
                 }
 
                 var partner = recipe.PartnerTemplate != null
@@ -150,19 +154,100 @@ namespace CardBattle.Managers
 
             playerManager.NotifyPlayerDataChanged(0);
             playerManager.NotifyPlayerDataChanged(1);
-
-            // TODO: マリガン処理
-            _mulliganDone = true;
         }
 
         /// <summary>
-        /// 戦闘を初期化し、先攻プレイヤーのターンを開始する
+        /// マリガンモードに入る。
+        /// </summary>
+        public void EnterMulligan()
+        {
+            _currentPhase = Core.Enums.GamePhase.Mulligan;
+        }
+
+        /// <summary>
+        /// マリガンモードを終了する。
+        /// </summary>
+        public void ExitMulligan()
+        {
+            _currentPhase = Core.Enums.GamePhase.Normal;
+        }
+
+        /// <summary>
+        /// マリガン確定時にマリガンUIから呼ばれる。UIを閉じ、先攻ターンを開始する。
+        /// </summary>
+        public void NotifyMulliganConfirmed()
+        {
+            _mulliganDone = true;
+            ExitMulligan();
+            var mulliganController = FindFirstObjectByType<MulliganController>(FindObjectsInactive.Include);
+            mulliganController?.Hide();
+            var gvm = UI.GameVisualManager.Instance;
+            if (gvm != null)
+                gvm.DealInitialHandToVisualizer(0);
+            StandingPictureManager.Instance?.SetStandingPicture(StandingPictureType.Normal);
+            StartTurn(_firstPlayer);
+        }
+
+        /// <summary>
+        /// 戦闘を初期化し、先攻プレイヤーのターンを開始する（マリガン後は NotifyMulliganConfirmed から呼ばれる）
         /// </summary>
         public void StartGame()
         {
             InitializeBattle();
             StandingPictureManager.Instance?.SetStandingPicture(StandingPictureType.Normal);
-            StartTurn(_firstPlayer);
+            var mulliganController = EnsureMulliganController();
+            if (mulliganController != null)
+            {
+                EnterMulligan();
+                mulliganController.Show();
+            }
+            else
+            {
+                _mulliganDone = true;
+                StartTurn(_firstPlayer);
+            }
+        }
+
+        private static MulliganController EnsureMulliganController()
+        {
+            var existing = FindFirstObjectByType<MulliganController>(FindObjectsInactive.Include);
+            if (existing != null) return existing;
+
+            var mulliganCanvas = GetOrCreateMulliganCanvas();
+            if (mulliganCanvas == null) return null;
+            try
+            {
+                var am = AddressableManager.Instance;
+                if (am == null) return null;
+                var instance = am.Instantiate(MulliganPanelAddress, mulliganCanvas.transform);
+                if (instance == null) return null;
+                instance.SetActive(false);
+                return instance.GetComponent<MulliganController>();
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[GameFlowManager] MulliganPanel のロードに失敗しました: {ex.Message}");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// マリガン用の前面表示用Canvasを取得する。無ければランタイムで生成する。
+        /// </summary>
+        private static Transform GetOrCreateMulliganCanvas()
+        {
+            var existing = GameObject.Find("MulliganCanvas");
+            if (existing != null) return existing.transform;
+
+            var go = new GameObject("MulliganCanvas");
+            var canvas = go.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.sortingOrder = 100;
+            var scaler = go.AddComponent<UnityEngine.UI.CanvasScaler>();
+            scaler.uiScaleMode = UnityEngine.UI.CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1280, 720);
+            go.AddComponent<UnityEngine.UI.GraphicRaycaster>();
+            return go.transform;
         }
 
         /// <summary>

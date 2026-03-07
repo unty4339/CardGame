@@ -38,6 +38,12 @@ namespace CardBattle.UI
         [SerializeField] private PairingLineView pairingLineView;
         [SerializeField] private GamePromptView gamePromptView;
 
+        /// <summary>プレイヤー0の手札ビジュアル（マリガンUIなどから参照）</summary>
+        public HandVisualizer HandVisualizerPlayer0 => handVisualizerPlayer0;
+
+        /// <summary>CardView プレハブ（マリガン用の新規生成などから参照）</summary>
+        public CardView CardPrefab => cardPrefab;
+
         [Header("手札→場 召喚アニメ")]
         [SerializeField] private float handCardPlayOutDuration = 0.3f;
         [SerializeField] private float handCardPlayOutOffsetY = 150f;
@@ -383,6 +389,8 @@ namespace CardBattle.UI
         /// </summary>
         public void PlayDrawAnimation(int playerId, Card cardData)
         {
+            if (playerId == 0 && Managers.GameFlowManager.Instance?.CurrentPhase == Core.Enums.GamePhase.Mulligan)
+                return;
             var handV = playerId == 0 ? handVisualizerPlayer0 : handVisualizerPlayer1;
             var deckT = playerId == 0 ? deckTransformPlayer0 : deckTransformPlayer1;
             var fieldV = playerId == 0 ? fieldVisualizerPlayer0 : fieldVisualizerPlayer1;
@@ -400,6 +408,41 @@ namespace CardBattle.UI
 
             var targetLocal = handV.CalculatePosition(handV.CurrentCount, handV.CurrentCount + 1);
             StartCoroutine(AnimateCardToHand(cardView, targetLocal, handV));
+        }
+
+        /// <summary>
+        /// マリガン終了後、プレイヤー0の確定手札を手札エリアに一括表示する（アニメなし）。
+        /// </summary>
+        public void DealInitialHandToVisualizer(int playerId)
+        {
+            if (playerId != 0) return;
+            var handV = handVisualizerPlayer0;
+            var fieldV = fieldVisualizerPlayer0;
+            if (cardPrefab == null || handV == null) return;
+
+            var pm = PlayerManager.Instance;
+            var data = pm?.GetPlayerData(0);
+            if (data?.Hand?.Cards == null) return;
+
+            var cards = data.Hand.Cards;
+            if (cards.Count == 0) return;
+
+            foreach (var view in new List<CardView>(handV.ActiveCards))
+            {
+                handV.RemoveCard(view);
+                if (view != null && view.gameObject != null)
+                    Destroy(view.gameObject);
+            }
+
+            foreach (var card in cards)
+            {
+                var cardView = Instantiate(cardPrefab, handV.transform);
+                cardView.Initialize(card);
+                cardView.OwnerPlayerId = 0;
+                if (fieldV != null && fieldV.FieldAreaRect != null)
+                    cardView.SetFieldAreaRect(fieldV.FieldAreaRect);
+                handV.AddCard(cardView);
+            }
         }
 
         /// <summary>カードを手札の目標位置まで移動させ、完了後に HandVisualizer に追加する。</summary>
