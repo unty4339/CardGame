@@ -335,7 +335,7 @@ namespace CardBattle.Editor
             go.transform.SetParent(canvasTransform, false);
             var rootRect = go.AddComponent<RectTransform>();
             rootRect.anchorMin = new Vector2(0.7f, 0.2f);
-            rootRect.anchorMax = new Vector2(0.98f, 0.8f);
+            rootRect.anchorMax = new Vector2(0.98f, 0.9f);
             rootRect.offsetMin = new Vector2(10, 10);
             rootRect.offsetMax = new Vector2(-10, -10);
 

@@ -143,6 +143,15 @@ namespace CardBattle.UI
                     cardsToReturn.Add(view.Card);
             }
 
+            // スキップ（1枚も選択していない）の場合はその場で閉じる
+            if (cardsToReturn.Count == 0)
+            {
+                var gfm = GameFlowManager.Instance;
+                if (gfm != null)
+                    gfm.NotifyMulliganConfirmed();
+                return;
+            }
+
             foreach (var view in _mulliganCards)
             {
                 if (view != null && view.gameObject != null)

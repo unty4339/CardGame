@@ -63,5 +63,11 @@ namespace CardBattle.ScriptableObjects
                 return new[] { e };
             return System.Array.Empty<IOnUnpairEffect>();
         }
+
+        /// <summary>
+        /// 表示用説明文。ユニットは「カード名＋改行＋コストX / 攻撃 Y / 体力 Z」を文頭に付与する。
+        /// </summary>
+        public override string GetDisplayDescription() =>
+            $"{CardName}\nコスト{PlayCost} / 攻撃 {BaseAttack} / 体力 {BaseHP}\n\n{Description}";
     }
 }

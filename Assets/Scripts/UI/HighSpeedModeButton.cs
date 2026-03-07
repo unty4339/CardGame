@@ -10,8 +10,8 @@ namespace CardBattle.UI
     /// </summary>
     public class HighSpeedModeButton : MonoBehaviour
     {
-        private const string LabelNormal = "通常";
-        private const string LabelHighSpeed = "高速";
+        private const string LabelNormal = "通常スピード";
+        private const string LabelHighSpeed = "高速スピード";
 
         private Text _labelText;
 

@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using CardBattle.Core.Effects;
 using CardBattle.Core.Enums;
@@ -28,6 +29,8 @@ namespace CardBattle.UI
         [Tooltip("攻撃時に対象を向くときのZ回転オフセット（度）。正面が上のスプライトなら -90 が目安")]
         [SerializeField] private float rotationOffsetDeg = -90f;
         [SerializeField] private UIEffect uiEffect;
+        [Tooltip("スペル/トーテムカードのとき非表示にするUI（攻撃力・体力の枠など）")]
+        [SerializeField] private List<GameObject> hideWhenSpellCard = new List<GameObject>();
 
         private Canvas _canvas;
         private RectTransform _rectTransform;
@@ -105,7 +108,7 @@ namespace CardBattle.UI
             if (Unit != null && Unit.PairingWithPartnerCard)
                 GameVisualManager.Instance?.ShowPairingLineToPartnerCard(this, Unit.OwnerPlayerId);
             if (Unit?.SourceCardTemplate == null) return;
-            CardDescriptionPanel.ShowDescription(Unit.SourceCardTemplate.Description);
+            CardDescriptionPanel.ShowDescription(Unit.SourceCardTemplate.GetDisplayDescription());
         }
 
         public void OnPointerExit(PointerEventData eventData)
@@ -255,6 +258,16 @@ namespace CardBattle.UI
                 : FrameType.Unit;
             if (frameImage != null)
                 StartCoroutine(FrameImageHelper.LoadFrameAsync(frameType, frameImage));
+
+            var hideAttackHp = unitData != null && unitData.IsTotem;
+            if (hideWhenSpellCard != null)
+            {
+                foreach (var go in hideWhenSpellCard)
+                {
+                    if (go != null)
+                        go.SetActive(!hideAttackHp);
+                }
+            }
         }
 
         private static IEnumerator LoadArtworkIfExists(string cardName, Image target)

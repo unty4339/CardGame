@@ -23,5 +23,11 @@ namespace CardBattle.ScriptableObjects
                 return new[] { effect };
             return System.Array.Empty<IOnPairingEffect>();
         }
+
+        /// <summary>
+        /// 表示用説明文。トーテムは「カード名＋改行＋コストX」を文頭に付与する。
+        /// </summary>
+        public override string GetDisplayDescription() =>
+            $"{CardName}\nコスト{PlayCost}\n\n{Description}";
     }
 }

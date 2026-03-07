@@ -8,5 +8,11 @@ namespace CardBattle.ScriptableObjects
     public abstract class SpellCardTemplateBase : CardTemplate
     {
         public override CardType CardType => CardType.Spell;
+
+        /// <summary>
+        /// 表示用説明文。スペルは「カード名＋改行＋コストX」を文頭に付与する。
+        /// </summary>
+        public override string GetDisplayDescription() =>
+            $"{CardName}\nコスト{PlayCost}\n\n{Description}";
     }
 }

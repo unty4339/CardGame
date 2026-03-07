@@ -21,6 +21,11 @@ namespace CardBattle.ScriptableObjects
         public virtual string Description => description ?? "";
 
         /// <summary>
+        /// 表示用説明文（ヘッダー行＋説明文）。マウスオーバー時に画面右側に表示する。サブクラスでオーバーライドする。
+        /// </summary>
+        public virtual string GetDisplayDescription() => Description;
+
+        /// <summary>
         /// プレイ時／召喚時に発動するペアリング効果のリスト。デフォルトは空。
         /// </summary>
         public virtual IReadOnlyList<IOnPairingEffect> GetPairingEffects() => System.Array.Empty<IOnPairingEffect>();

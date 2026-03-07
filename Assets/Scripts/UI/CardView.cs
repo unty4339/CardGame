@@ -29,6 +29,8 @@ namespace CardBattle.UI
         [SerializeField] private RectTransform fieldAreaRect;
         [SerializeField] private Image cardBackImage;
         [SerializeField] private List<GameObject> performanceDisplayObjects = new List<GameObject>();
+        [Tooltip("スペル/トーテムカードのとき非表示にするUI（攻撃力・体力の枠など）")]
+        [SerializeField] private List<GameObject> hideWhenSpellCard = new List<GameObject>();
 
         private RectTransform _rectTransform;
         private Canvas _canvas;
@@ -92,6 +94,16 @@ namespace CardBattle.UI
             };
             if (frameImage != null)
                 StartCoroutine(FrameImageHelper.LoadFrameAsync(frameType, frameImage));
+
+            var isSpellCard = data.Template.CardType == CardType.Spell || data.Template.CardType == CardType.Totem;
+            if (hideWhenSpellCard != null)
+            {
+                foreach (var go in hideWhenSpellCard)
+                {
+                    if (go != null)
+                        go.SetActive(!isSpellCard);
+                }
+            }
         }
 
         private static IEnumerator LoadArtworkIfExists(string cardName, Image target)
@@ -229,7 +241,7 @@ namespace CardBattle.UI
         {
             if (_isOpponentHandCard) return;
             if (Card?.Template == null) return;
-            CardDescriptionPanel.ShowDescription(Card.Template.Description);
+            CardDescriptionPanel.ShowDescription(Card.Template.GetDisplayDescription());
         }
 
         public void OnPointerExit(PointerEventData eventData)
